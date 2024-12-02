@@ -7,9 +7,20 @@ const { Option } = Select;
 const AddSupervisor = () => {
   const [form] = Form.useForm();
 
-  const onFinish = (values) => {
-    console.log("Form Values:", values);
-    form.resetFields();
+  const onFinish =  async (values) => {
+    setLoading(true);
+    try{
+      const response = await axios.post("http://localhost:5000/api/addsupervisor", values);
+
+      if (response.data.success){
+        message.success("Added Successfully.");
+
+        localstorage.setItem("role", response.data.role);
+      }
+
+    }
+    // console.log("Form Values:", values);
+    // form.resetFields();
   };
 
   const onFinishFailed = (errorInfo) => {
