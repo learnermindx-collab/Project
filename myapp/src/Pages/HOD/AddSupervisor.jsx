@@ -1,27 +1,33 @@
 import React from "react";
 import { Form, Input, Button, Select, Upload, Card } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
-
+import {useState} from "react";
+import axios from "axios";
+import { message } from "antd";
+import api from "../../api";
 const { Option } = Select;
 
 const AddSupervisor = () => {
-  const [form] = Form.useForm();
-
+ // const [form] = Form.useForm();
+const [loading, setLoading] = useState(false);
+ const [form] = Form.useForm();
   const onFinish =  async (values) => {
     setLoading(true);
     try{
-      const response = await axios.post("http://localhost:5000/api/addsupervisor", values);
+      const response = await api.post( "/auth/addsupervisor", values);
 
       if (response.data.success){
         message.success("Added Successfully.");
 
-        localstorage.setItem("role", response.data.role);
+        localStorage.setItem("token", response.data.token);
       }
 
-    }
+    }catch (error) {
+    // handle error
+  }
     // console.log("Form Values:", values);
     // form.resetFields();
-  };
+   } ;
 
   const onFinishFailed = (errorInfo) => {
     console.log("Failed:", errorInfo);
@@ -62,6 +68,16 @@ const AddSupervisor = () => {
           >
             <Input />
           </Form.Item>
+           <Form.Item
+            label="password"
+            name="password"
+            rules={[
+              { required: true, message: "Enter password" },
+              { type: "password", message: "Please enter a valid password" },
+            ]}
+          >
+            <Input />
+          </Form.Item>
 
 
           <Form.Item
@@ -70,7 +86,7 @@ const AddSupervisor = () => {
             rules={[{ required: true, message: "Please select role!" }]}
           >
             <Select>
-              <Option value="male">Supervisor</Option>
+              <Option value="supervisor">supervisor</Option>
             </Select>
           </Form.Item>
 

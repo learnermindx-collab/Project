@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+// 
+
+import React, { useEffect, useState } from "react";
 import {
   Card,
   Form,
@@ -8,165 +10,148 @@ import {
   List,
   message,
   notification,
+  Spin,
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
+import axios from "axios";
 
-const App = () => {
-  const [view, setView] = useState("project"); // Controls which view is shown
-  const [feedbacks, setFeedbacks] = useState([
-    {
-      text: "Great start! Please add more details to the objectives.",
-      date: "2024-11-01",
-      time: "10:30 AM",
-    },
-    {
-      text: "Ensure you cover all major components in your description.",
-      date: "2024-11-02",
-      time: "02:45 PM",
-    },
-    {
-      text: "Consider adding a timeline for milestones.",
-      date: "2024-11-03",
-      time: "09:20 AM",
-    },
-  ]);
+const StudentProject = () => {
+  const [view, setView] = useState("project");
+  const [project, setProject] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleProposalSubmit = (values) => {
-    message.success("Proposal submitted successfully.");
-    console.log("Submitted Proposal Data:", values);
-    setView("project"); // Return to project display after submission
-    notification.info({
-      message: "Proposal Submitted",
-      description: "Your proposal has been submitted and is pending review.",
-    });
+  useEffect(() => {
+    loadMyProject();
+  }, []);
+
+  const loadMyProject = async () => {
+    try {
+      //const res = await axios.get("/api/projects/my", { withCredentials: true });
+      axios.get("/api/projects/my", {
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("token")}`
+  }
+});
+      setProject(res.data || null);
+    } catch {
+      message.error("Unable to load project");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const submitProposal = async (values) => {
+    const fd = new FormData();
+    fd.append("title", values.title);
+    fd.append("description", values.description);
+    fd.append("objectives", values.objectives);
+    fd.append("document", values.document.file);
+
+    try {
+      //await axios.post("/api/projects", fd, { withCredentials: true });
+      axios.post("/api/projects", fd, {
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("token")}`
+  }
+});
+
+      notification.success({ message: "Proposal submitted" });
+      setView("project");
+      loadMyProject();
+    } catch {
+      notification.error({ message: "Submission failed" });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", marginTop: 80 }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
   return (
-    <div
-      style={{
-        width: "100%",
-        maxWidth: 800,
-        margin: "20px auto",
-        padding: "20px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
+    <div style={{ maxWidth: 800, margin: "30px auto" }}>
       {view === "project" && (
-        <Card title="Project Details" bordered={false}>
-          <p>
-            <strong>Title:</strong> Communication Era
-          </p>
-          <p>
-            <strong>Description:</strong> To explore and analyze the evolution
-            of communication technologies and their impact on society. And to
-            develop innovative solutions for enhancing modern communication
-            methods, making them more efficient and accessible.
-          </p>
-          <p>
-            <strong>Leader:</strong> Samaiya
-          </p>
-          <p>
-            <strong>Status:</strong> Proposal Pending
-          </p>
-          <Button
-            type="primary"
-            onClick={() => setView("proposal")}
-            style={{ marginRight: 10 }}
-          >
-            Submit Proposal
-          </Button>
-          <Button onClick={() => setView("feedback")}>View Feedback</Button>
+        <Card title="Project">
+          {project ? (
+            <>
+              <p><strong>Title:</strong> {project.title}</p>
+              <p><strong>Description:</strong> {project.description}</p>
+              <p><strong>Objectives:</strong> {project.objectives}</p>
+              <p><strong>Status:</strong> {project.status}</p>
+
+              <Button type="primary" onClick={() => setView("proposal")} style={{ marginRight: 10 }}>
+                Update Proposal
+              </Button>
+              <Button onClick={() => setView("feedback")}>View Feedback</Button>
+            </>
+          ) : (
+            <>
+              <p>No proposal submitted yet.</p>
+              <Button type="primary" onClick={() => setView("proposal")}>
+                Submit Proposal
+              </Button>
+            </>
+          )}
         </Card>
       )}
 
       {view === "proposal" && (
-        <Card title="Submit Project Proposal" bordered={false}>
-          <Form
-            layout="vertical"
-            requiredMark={false} /* Disable the asterisk for required fields */
-            onFinish={handleProposalSubmit}
-          >
-            <Form.Item
-              label="Project Title"
-              name="title"
-              rules={[{ required: true, message: "Please enter the title" }]}
-            >
-              <Input placeholder="Enter project title" />
+        <Card title="Submit Proposal">
+          <Form layout="vertical" onFinish={submitProposal}>
+            <Form.Item name="title" label="Title" rules={[{ required: true }]}>
+              <Input />
             </Form.Item>
-            <Form.Item
-              label="Description"
-              name="description"
-              rules={[
-                { required: true, message: "Please enter the description" },
-              ]}
-            >
-              <Input.TextArea rows={4} placeholder="Describe your project" />
+
+            <Form.Item name="description" label="Description" rules={[{ required: true }]}>
+              <Input.TextArea rows={3} />
             </Form.Item>
-            <Form.Item
-              label="Objectives"
-              name="objectives"
-              rules={[{ required: true, message: "Please enter objectives" }]}
-            >
-              <Input.TextArea rows={3} placeholder="Enter project objectives" />
+
+            <Form.Item name="objectives" label="Objectives" rules={[{ required: true }]}>
+              <Input.TextArea rows={3} />
             </Form.Item>
+
             <Form.Item
-              label="Attach Document"
               name="document"
-              rules={[{ required: true, message: "Please upload a document" }]}
+              label="Document"
+              rules={[{ required: true }]}
+              valuePropName="file"
             >
-              <Upload>
-                <Button icon={<UploadOutlined />}>Click to Upload</Button>
+              <Upload beforeUpload={() => false} maxCount={1}>
+                <Button icon={<UploadOutlined />}>Upload</Button>
               </Upload>
             </Form.Item>
+
             <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                size="large"
-                style={{
-                  color: "#fff",
-                }}
-              >
-                Submit Proposal
-              </Button>
-              <Button
-                onClick={() => setView("project")}
-                style={{ marginLeft: 10 }}
-                size="large"
-              >
-                Cancel
-              </Button>
+              <Button type="primary" htmlType="submit">Submit</Button>
+              <Button onClick={() => setView("project")} style={{ marginLeft: 10 }}>Cancel</Button>
             </Form.Item>
           </Form>
         </Card>
       )}
 
       {view === "feedback" && (
-        <Card title="Supervisor Feedback" bordered={false}>
-          {feedbacks.length > 0 ? (
+        <Card title="Feedback">
+          {project?.feedbacks?.length ? (
             <List
-              dataSource={feedbacks}
-              renderItem={(item, index) => (
-                <List.Item key={index}>
+              dataSource={project.feedbacks}
+              renderItem={(f, i) => (
+                <List.Item key={i}>
                   <div>
-                    <p>
-                      <strong>Feedback:</strong> {item.text}
-                    </p>
-                    <p>
-                      <strong>Date:</strong> {item.date}
-                    </p>
-                    <p>
-                      <strong>Time:</strong> {item.time}
-                    </p>
+                    <p>{f.text}</p>
+                    <small>{new Date(f.createdAt).toLocaleString()}</small>
                   </div>
                 </List.Item>
               )}
             />
           ) : (
-            <p>No feedback is available at this time.</p>
+            <p>No feedback yet.</p>
           )}
+
           <Button onClick={() => setView("project")} style={{ marginTop: 10 }}>
-            Back to Project
+            Back
           </Button>
         </Card>
       )}
@@ -174,4 +159,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default StudentProject;

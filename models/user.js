@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
         minlength : 6,
     },
     role: {
-        type: String, enum: ['HOD','Student' ,'Supervisor'],
+        type: String, enum: ['HOD','student' ,'Supervisor'],
     },
     isPasswordSet: {
         type: Boolean, default: true,
@@ -27,6 +27,5 @@ const userSchema = new mongoose.Schema({
 
 
 });
-
-
-export default mongoose.model('User', userSchema);
+export default mongoose.models.user || mongoose.model('User', userSchema);
+//export default mongoose.model('User', userSchema);
