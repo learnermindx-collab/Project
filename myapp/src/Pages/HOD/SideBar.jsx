@@ -8,6 +8,7 @@ import {
   CalendarOutlined,
   MailOutlined,
   LogoutOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import { Menu } from "antd";
 import { Navigate, useNavigate } from "react-router-dom";
@@ -80,11 +81,25 @@ function SideBar() {
               />
             ),
           },
-          {
+{
             label: "Events",
             key: "/admin/events",
             icon: (
               <CalendarOutlined
+                style={{
+                  color: "blue",
+                  backgroundColor: "rgb(#4B91FF)",
+                  fontSize: "20px",
+                  marginLeft: "20px",
+                }}
+              />
+            ),
+          },
+          {
+            label: "CollaHub",
+            key: "/admin/community",
+            icon: (
+              <TeamOutlined
                 style={{
                   color: "blue",
                   backgroundColor: "rgb(#4B91FF)",

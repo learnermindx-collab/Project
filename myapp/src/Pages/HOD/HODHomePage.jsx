@@ -9,6 +9,7 @@ import Events from "./Events";
 import Dashboard from "./Dashboard";
 import Logout from "./Logout";
 import Issues from "./Issues";
+import Community from "../Community";
 import Footerpage from "../../Components/Footerpage";
 
 function HODHomePage() {
@@ -25,6 +26,7 @@ function HODHomePage() {
               <Route path="addstudent" element={<AddStudent />}></Route>
               <Route path="projects" element={<Projects />}></Route>
               <Route path="events" element={<Events />}></Route>
+              <Route path="community" element={<Community />}></Route>
               <Route path="issues" element={<Issues />}></Route>
               <Route path="logout" element={<Logout />}></Route>
               <Route path="*" element={<div>Page not found.</div>}> </Route>

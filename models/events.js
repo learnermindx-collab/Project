@@ -9,8 +9,8 @@ const eventSchema = new mongoose.Schema({
     },
     name:{
         type: String,
-    }
-    ,date: {
+    },
+    date: {
         type: String,
     },
     time: {
@@ -19,9 +19,21 @@ const eventSchema = new mongoose.Schema({
     location:{
         type: String,
         default: '',
-
-    },description: {
+    },
+    description: {
         type: String,
+    },
+    // Roles to be notified about the event
+    notifyRoles: {
+        type: [String],
+        enum: ['hod', 'supervisor', 'student'],
+        default: ['hod', 'supervisor', 'student']
+    },
+    // Created by role
+    createdBy: {
+        type: String,
+        enum: ['hod', 'supervisor', 'student'],
+        default: 'hod'
     }
     
 }, {timestamps: true});

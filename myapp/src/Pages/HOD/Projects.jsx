@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   Button,
@@ -8,366 +8,449 @@ import {
   Select,
   Row,
   Col,
+  Spin,
+  Tag,
+  Tabs,
   message,
-  Upload,
 } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
+import { CheckOutlined, CloseOutlined, EyeOutlined } from "@ant-design/icons";
+import api from "../../api";
+import notify from "../../utils/notify";
 
-const { Meta } = Card;
 const { Option } = Select;
+const { TabPane } = Tabs;
 
-const mentorsList = ["Dr. Smith", "Prof. Brown", "Ms. Green"];
+// Project Card Component
+const ProjectCard = ({ project, onAssignSupervisor, onViewProposal, onEvaluate }) => {
+  const getStatusColor = (status) => {
+    const colors = {
+      proposal_submitted: "orange",
+      under_review: "blue",
+      supervisor_approved: "cyan",
+      approved: "green",
+      rejected: "red",
+      hod_approved: "green",
+      hod_rejected: "red",
+      in_progress: "blue",
+      completed: "purple",
+    };
+    return colors[status] || "default";
+  };
 
-const ProjectCard = ({ project, onEdit, onViewProposal }) => (
-  <Card
-    hoverable
-    style={{
-      borderRadius: "8px",
-      boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
-      margin: "10px",
-    }}
-    cover={
-      <img
-        alt={project.name}
-        src={project.image}
-        style={{
-          height: "180px",
-          objectFit: "cover",
-          borderRadius: "8px 8px 0 0",
-        }}
-      />
-    }
-    actions={[
-      <Button type="primary" onClick={() => onEdit(project)}>
-        Edit Details
-      </Button>,
-      <Button type="default" onClick={() => onViewProposal(project)}>
-        View Proposal
-      </Button>,
-    ]}
-  >
-    <Meta
-      title={project.name}
-      description={
-        <div>
-          <Row justify="space-between">
+  const getStatusLabel = (status) => {
+    const labels = {
+      proposal_submitted: "Proposal Submitted",
+      under_review: "Under Review",
+      supervisor_approved: "Supervisor Approved - Pending HOD",
+      approved: "Approved",
+      rejected: "Rejected",
+      hod_approved: "HOD Approved",
+      hod_rejected: "HOD Rejected",
+      in_progress: "In Progress",
+      completed: "Completed",
+    };
+    return labels[status] || status;
+  };
+
+  return (
+    <Card
+      hoverable
+      style={{
+        borderRadius: "8px",
+        boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+        margin: "10px",
+      }}
+    >
+      <div>
+        <Row justify="space-between" align="middle">
+          <Col>
+            <strong>Title:</strong> {project.title}
+          </Col>
+          <Col>
+            <Tag color={getStatusColor(project.status)}>
+              {getStatusLabel(project.status)}
+            </Tag>
+          </Col>
+        </Row>
+        <Row justify="space-between" style={{ marginTop: "5px" }}>
+          <Col>
+            <strong>Leader:</strong> {project.leader?.name || "N/A"}
+          </Col>
+          <Col>
+            <strong>Supervisor:</strong> {project.supervisor?.name || "Not Assigned"}
+          </Col>
+        </Row>
+        <p style={{ marginTop: "10px" }}>{project.description}</p>
+        
+        <Row justify="end" gutter={8}>
+          <Col>
+            <Button type="default" icon={<EyeOutlined />} onClick={() => onViewProposal(project)}>
+              View Proposal
+            </Button>
+          </Col>
+          {project.status === "proposal_submitted" && (
             <Col>
-              <strong>Status:</strong> {project.status}
+              <Button type="primary" onClick={() => onAssignSupervisor(project)}>
+                Assign Supervisor
+              </Button>
             </Col>
+          )}
+          {project.status === "supervisor_approved" && (
             <Col>
-              <strong>Members:</strong> {project.membersCount}
+              <Button type="primary" icon={<CheckOutlined />} onClick={() => onEvaluate(project)}>
+                Evaluate
+              </Button>
             </Col>
-          </Row>
-          <Row justify="space-between" style={{ marginTop: "5px" }}>
-            <Col>
-              <strong>Leader:</strong> {project.leader}
-            </Col>
-            <Col>
-              <strong>Supervisors:</strong> {project.mentor}
-            </Col>
-          </Row>
-        </div>
-      }
-    />
-  </Card>
-);
+          )}
+        </Row>
+      </div>
+    </Card>
+  );
+};
 
 const FYPProjects = () => {
-  const [projects, setProjects] = useState([
-    // Sample projects (12)
-    {
-      id: 1,
-      name: "Learn Thinking",
-      status: "In Progress",
-      membersCount: 5,
-      leader: "Alice",
-      mentor: "Dr. Smith",
-      image: "/img11.jpg",
-      proposal: "Proposal document content for Project A",
-    },
-    {
-      id: 2,
-      name: "PrintEase",
-      status: "Completed",
-      membersCount: 3,
-      leader: "Bob",
-      mentor: "Prof. Brown",
-      image: "/PrintEase.jpg",
-      proposal: "Proposal document content for Project B",
-    },
-    {
-      id: 3,
-      name: "PI Project",
-      status: "In Progress",
-      membersCount: 4,
-      leader: "Charlie",
-      mentor: "Ms. Green",
-      image: "/img3.webp",
-      proposal: "Proposal document content for Project C",
-    },
-    {
-      id: 4,
-      name: "Cost Management",
-      status: "In Progress",
-      membersCount: 6,
-      leader: "Diana",
-      mentor: "Dr. Smith",
-      image: "/img5.jpg",
-      proposal: "Proposal document content for Project D",
-    },
-    {
-      id: 5,
-      name: "Development",
-      status: "Completed",
-      membersCount: 2,
-      leader: "Eve",
-      mentor: "Prof. Brown",
-      image: "/img4.webp",
-      proposal: "Proposal document content for Project E",
-    },
-    {
-      id: 6,
-      name: "24/7 Jobs",
-      status: "In Progress",
-      membersCount: 3,
-      leader: "Frank",
-      mentor: "Ms. Green",
-      image: "/img6.jpg",
-      proposal: "Proposal document content for Project F",
-    },
-    {
-      id: 7,
-      name: "Initial Public Offering (IPO)",
-      status: "Completed",
-      membersCount: 5,
-      leader: "Grace",
-      mentor: "Dr. Smith",
-      image: "/img7.jpg",
-      proposal: "Proposal document content for Project G",
-    },
-    {
-      id: 8,
-      name: "Petpedia",
-      status: "In Progress",
-      membersCount: 4,
-      leader: "Hank",
-      mentor: "Prof. Brown",
-      image: "/Petpedia.jpg",
-      proposal: "Proposal document content for Project H",
-    },
-    {
-      id: 9,
-      name: "Smart Home Automation (SHA)",
-      status: "Completed",
-      membersCount: 2,
-      leader: "Ivy",
-      mentor: "Ms. Green",
-      image: "/SHA.jpg",
-      proposal: "Proposal document content for Smart Home Automation (SHA)",
-    },
-    {
-      id: 10,
-      name: "Communication Era",
-      status: "In Progress",
-      membersCount: 3,
-      leader: "Jack",
-      mentor: "Dr. Smith",
-      image: "/img8.jpg",
-      proposal: "Proposal document content for Project J",
-    },
-    {
-      id: 11,
-      name: "Collabora",
-      status: "Completed",
-      membersCount: 5,
-      leader: "Karen",
-      mentor: "Prof. Brown",
-      image: "/COLABORA.png",
-      proposal: "Proposal document content for Project K",
-    },
-    {
-      id: 12,
-      name: "Unit Nation",
-      status: "In Progress",
-      membersCount: 4,
-      leader: "Leo",
-      mentor: "Ms. Green",
-      image: "/img1.webp",
-      proposal: "Proposal document content for Project L",
-    },
-  ]);
-
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [supervisors, setSupervisors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isAssignModalVisible, setIsAssignModalVisible] = useState(false);
   const [isProposalModalVisible, setIsProposalModalVisible] = useState(false);
-  const [editingProject, setEditingProject] = useState(null);
-  const [viewingProposal, setViewingProposal] = useState(null);
-  const [uploadedImage, setUploadedImage] = useState(null);
+  const [isEvaluateModalVisible, setIsEvaluateModalVisible] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [activeTab, setActiveTab] = useState("all");
 
-  const showEditModal = (project) => {
-    setEditingProject(project);
-    setUploadedImage(project.image);
-    setIsEditModalVisible(true);
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+    loadProjects();
+    loadSupervisors();
+
+    const handleFocus = () => {
+      loadProjects();
+      loadSupervisors();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
+
+  const loadProjects = async () => {
+    try {
+      const res = await api.get("/projects/all");
+      setProjects(res.data || []);
+    } catch (err) {
+      notify.apiError(err, "Unable to load projects");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSupervisors = async () => {
+    try {
+      const res = await api.get("/auth/supervisors");
+      setSupervisors(res.data || []);
+    } catch (err) {
+      try {
+        const res = await api.get("/stats/supervisors");
+        setSupervisors(res.data || []);
+      } catch (e) {
+        console.error("Unable to load supervisors", e);
+      }
+    }
+  };
+
+  const showAssignModal = (project) => {
+    setSelectedProject(project);
+    setIsAssignModalVisible(true);
   };
 
   const showProposalModal = (project) => {
-    setViewingProposal(project);
+    setSelectedProject(project);
     setIsProposalModalVisible(true);
   };
 
-  const handleEditSubmit = (values) => {
-    const updatedProject = {
-      ...values,
-      image: uploadedImage || editingProject.image,
-    };
-
-    setProjects((prevProjects) =>
-      prevProjects.map((proj) =>
-        proj.id === editingProject.id ? { ...proj, ...updatedProject } : proj
-      )
-    );
-
-    message.success(`Mentor updated successfully for ${values.name}.`);
-
-    setIsEditModalVisible(false);
-    setEditingProject(null);
+  const showEvaluateModal = (project) => {
+    setSelectedProject(project);
+    setIsEvaluateModalVisible(true);
   };
 
-  const handleProposalSubmit = (status, feedback) => {
-    message.success(`Proposal ${status}.`);
-    setIsProposalModalVisible(false);
-    setViewingProposal(null);
-  };
-
-  const handleCancelEditModal = () => {
-    setIsEditModalVisible(false);
-    setEditingProject(null);
+  const handleCancelAssignModal = () => {
+    setIsAssignModalVisible(false);
+    setSelectedProject(null);
   };
 
   const handleCancelProposalModal = () => {
     setIsProposalModalVisible(false);
-    setViewingProposal(null);
+    setSelectedProject(null);
   };
 
-  const handleImageUpload = ({ file }) => {
-    const reader = new FileReader();
-    reader.onload = () => setUploadedImage(reader.result);
-    reader.readAsDataURL(file);
+  const handleCancelEvaluateModal = () => {
+    setIsEvaluateModalVisible(false);
+    setSelectedProject(null);
   };
+
+  const handleAssignSubmit = async (values) => {
+    try {
+      await api.post("/projects/assign-supervisor", {
+        projectId: selectedProject._id,
+        supervisorId: values.supervisorId,
+      });
+      message.success("Supervisor assigned successfully");
+      loadProjects();
+      handleCancelAssignModal();
+    } catch (err) {
+      notify.apiError(err, "Failed to assign supervisor");
+    }
+  };
+
+  const handleEvaluateSubmit = async (values) => {
+    try {
+      await api.post(`/projects/${selectedProject._id}/evaluate`, {
+        decision: values.decision,
+        feedback: values.feedback,
+      });
+      
+      if (values.decision === "hod_approved") {
+        message.success("Project approved by HOD");
+      } else {
+        message.info("Project rejected by HOD");
+      }
+      
+      loadProjects();
+      handleCancelEvaluateModal();
+    } catch (err) {
+      notify.apiError(err, "Failed to evaluate project");
+    }
+  };
+
+  // Filter projects based on active tab
+  const getFilteredProjects = () => {
+    switch (activeTab) {
+      case "pending_hod":
+        return projects.filter((p) => p.status === "supervisor_approved");
+      case "hod_approved":
+        return projects.filter((p) => p.status === "hod_approved");
+      case "hod_rejected":
+        return projects.filter((p) => p.status === "hod_rejected");
+      case "under_review":
+        return projects.filter((p) => p.status === "under_review" || p.status === "proposal_submitted");
+      default:
+        return projects;
+    }
+  };
+
+  const pendingHodCount = projects.filter((p) => p.status === "supervisor_approved").length;
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", marginTop: 80 }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: "0px" }}>
-      <h1
-        style={{
-          textAlign: "center",
-          marginTop: "0px",
-          paddingBottom:"15px",
-          paddingTop:"15px",
-          marginBottom: "30px",
-          backgroundColor: "#4D96FF",
-          color: "white",
-        }}
-      >
-        Projects
-      </h1>
-      <Row gutter={[16, 16]} justify="center">
-        {projects.map((project) => (
-          <Col span={8} key={project.id}>
-            <ProjectCard
-              project={project}
-              onEdit={showEditModal}
-              onViewProposal={showProposalModal}
-            />
-          </Col>
-        ))}
-      </Row>
+    <div style={{ padding: "20px" }}>
+      <h1 style={{ textAlign: "center", marginBottom: "20px" }}>FYP Projects</h1>
 
-      {/* Edit Modal */}
+      <Tabs activeKey={activeTab} onChange={setActiveTab}>
+        <TabPane tab="All Projects" key="all">
+          <Row gutter={[16, 16]} justify="center">
+            {getFilteredProjects().map((project) => (
+              <Col span={8} key={project._id}>
+                <ProjectCard
+                  project={project}
+                  onAssignSupervisor={showAssignModal}
+                  onViewProposal={showProposalModal}
+                  onEvaluate={showEvaluateModal}
+                />
+              </Col>
+            ))}
+          </Row>
+          {getFilteredProjects().length === 0 && (
+            <p style={{ textAlign: "center", color: "#999" }}>No projects found</p>
+          )}
+        </TabPane>
+        
+        <TabPane tab={`Pending HOD Evaluation (${pendingHodCount})`} key="pending_hod">
+          <Row gutter={[16, 16]} justify="center">
+            {getFilteredProjects().map((project) => (
+              <Col span={8} key={project._id}>
+                <ProjectCard
+                  project={project}
+                  onAssignSupervisor={showAssignModal}
+                  onViewProposal={showProposalModal}
+                  onEvaluate={showEvaluateModal}
+                />
+              </Col>
+            ))}
+          </Row>
+          {getFilteredProjects().length === 0 && (
+            <p style={{ textAlign: "center", color: "#999" }}>No projects pending HOD evaluation</p>
+          )}
+        </TabPane>
+        
+        <TabPane tab="HOD Approved" key="hod_approved">
+          <Row gutter={[16, 16]} justify="center">
+            {getFilteredProjects().map((project) => (
+              <Col span={8} key={project._id}>
+                <ProjectCard
+                  project={project}
+                  onAssignSupervisor={showAssignModal}
+                  onViewProposal={showProposalModal}
+                  onEvaluate={showEvaluateModal}
+                />
+              </Col>
+            ))}
+          </Row>
+        </TabPane>
+        
+        <TabPane tab="HOD Rejected" key="hod_rejected">
+          <Row gutter={[16, 16]} justify="center">
+            {getFilteredProjects().map((project) => (
+              <Col span={8} key={project._id}>
+                <ProjectCard
+                  project={project}
+                  onAssignSupervisor={showAssignModal}
+                  onViewProposal={showProposalModal}
+                  onEvaluate={showEvaluateModal}
+                />
+              </Col>
+            ))}
+          </Row>
+        </TabPane>
+      </Tabs>
+
+      {/* Assign Supervisor Modal */}
       <Modal
-        title="Edit Project Details"
-        visible={isEditModalVisible}
-        onCancel={handleCancelEditModal}
+        title="Assign Supervisor"
+        open={isAssignModalVisible}
+        onCancel={handleCancelAssignModal}
         footer={null}
       >
-        {editingProject && (
-          <Form
-            layout="vertical"
-            initialValues={editingProject}
-            onFinish={handleEditSubmit}
-          >
-            <Form.Item name="name" label="Project Name">
-              <Input />
-            </Form.Item>
-            <Form.Item name="status" label="Status">
-              <Input />
-            </Form.Item>
-            <Form.Item name="membersCount" label="Members Count">
-              <Input type="number" />
-            </Form.Item>
-            <Form.Item name="leader" label="Leader">
-              <Input />
-            </Form.Item>
-            <Form.Item name="mentor" label="Mentor">
-              <Select>
-                {mentorsList.map((mentor) => (
-                  <Option key={mentor} value={mentor}>
-                    {mentor}
+        {selectedProject && (
+          <Form layout="vertical" onFinish={handleAssignSubmit}>
+            <Form.Item name="supervisorId" label="Supervisor" rules={[{ required: true }]}>
+              <Select placeholder="Select a supervisor">
+                {supervisors.map((sup) => (
+                  <Option key={sup._id} value={sup._id}>
+                    {sup.name}
                   </Option>
                 ))}
               </Select>
             </Form.Item>
-            <Form.Item label="Project Image">
-              <Upload
-                beforeUpload={() => false}
-                onChange={handleImageUpload}
-                showUploadList={false}
-              >
-                <Button icon={<UploadOutlined />}>Upload Image</Button>
-              </Upload>
-              {uploadedImage && (
-                <img
-                  src={uploadedImage}
-                  alt="Project Preview"
-                  style={{
-                    width: "100%",
-                    marginTop: "10px",
-                    borderRadius: "8px",
-                  }}
-                />
-              )}
-            </Form.Item>
             <Button type="primary" htmlType="submit" block>
-              Save Changes
+              Assign
             </Button>
           </Form>
         )}
       </Modal>
 
-      {/* Proposal Modal */}
+      {/* View Proposal Modal */}
       <Modal
         title="Project Proposal"
-        visible={isProposalModalVisible}
+        open={isProposalModalVisible}
         onCancel={handleCancelProposalModal}
         footer={null}
+        width={700}
       >
-        
-        {viewingProposal && (
+        {selectedProject && (
           <div>
-            
-            <p>{viewingProposal.proposal}</p>
-            <Button
-              type="primary"
-              onClick={() => handleProposalSubmit("Accepted")}
-              style={{ marginRight: "10px" }}
-            >
-              Accept
-            </Button>
-            <Button
-              type="default"
-              onClick={() => handleProposalSubmit("Rejected")}
-            >
-              Reject
-            </Button>
+            <p>
+              <strong>Title:</strong> {selectedProject.title}
+            </p>
+            <p>
+              <strong>Description:</strong> {selectedProject.description}
+            </p>
+            <p>
+              <strong>Objectives:</strong> {selectedProject.objectives}
+            </p>
+            <p>
+              <strong>Leader:</strong> {selectedProject.leader?.name} ({selectedProject.leader?.email})
+            </p>
+            <p>
+              <strong>Supervisor:</strong> {selectedProject.supervisor?.name || "Not Assigned"}
+            </p>
+            <p>
+              <strong>Document:</strong>{" "}
+              <a href={`http://localhost:5000/uploads/${selectedProject.document}`} target="_blank" rel="noopener noreferrer">
+                View Document
+              </a>
+            </p>
+            <p>
+              <strong>Supervisor Feedbacks:</strong>
+            </p>
+            <ul>
+              {selectedProject.feedbacks?.map((f, i) => (
+                <li key={i}>
+                  {f.text} - {f.by?.name} ({new Date(f.createdAt).toLocaleString()})
+                </li>
+              )) || <li>No feedback yet</li>}
+            </ul>
+            {selectedProject.hodFeedback && (
+              <>
+                <p>
+                  <strong>HOD Feedback:</strong>
+                </p>
+                <ul>
+                  <li>
+                    {selectedProject.hodFeedback.text} - {selectedProject.hodFeedback.by?.name} ({new Date(selectedProject.hodFeedback.createdAt).toLocaleString()})
+                  </li>
+                </ul>
+              </>
+            )}
           </div>
+        )}
+      </Modal>
+
+      {/* Evaluate Modal */}
+      <Modal
+        title="Evaluate Project"
+        open={isEvaluateModalVisible}
+        onCancel={handleCancelEvaluateModal}
+        footer={null}
+      >
+        {selectedProject && (
+          <Form layout="vertical" onFinish={handleEvaluateSubmit}>
+            <p>
+              <strong>Project:</strong> {selectedProject.title}
+            </p>
+            <p>
+              <strong>Supervisor:</strong> {selectedProject.supervisor?.name || "Not Assigned"}
+            </p>
+            
+            <Form.Item 
+              name="decision" 
+              label="Decision" 
+              rules={[{ required: true, message: "Please select a decision" }]}
+            >
+              <Select placeholder="Select decision">
+                <Option value="hod_approved">
+                  <span style={{ color: "green" }}>
+                    <CheckOutlined /> Approve Project
+                  </span>
+                </Option>
+                <Option value="hod_rejected">
+                  <span style={{ color: "red" }}>
+                    <CloseOutlined /> Reject Project
+                  </span>
+                </Option>
+              </Select>
+            </Form.Item>
+            
+            <Form.Item 
+              name="feedback" 
+              label="Feedback/Comments"
+              rules={[{ required: true, message: "Please provide feedback" }]}
+            >
+              <Input.TextArea rows={4} placeholder="Provide your evaluation feedback..." />
+            </Form.Item>
+            
+            <Button type="primary" htmlType="submit" block>
+              Submit Evaluation
+            </Button>
+          </Form>
         )}
       </Modal>
     </div>

@@ -1,5 +1,3 @@
-// 
-
 import React, { useEffect, useState } from "react";
 import {
   Card,
@@ -8,12 +6,13 @@ import {
   Button,
   Upload,
   List,
-  message,
-  notification,
   Spin,
+  Tag,
+  message,
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
-import axios from "axios";
+import api from "../../api";
+import notify from "../../utils/notify";
 
 const StudentProject = () => {
   const [view, setView] = useState("project");
@@ -21,20 +20,24 @@ const StudentProject = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
     loadMyProject();
+
+    const handleFocus = () => loadMyProject();
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   const loadMyProject = async () => {
     try {
-      //const res = await axios.get("/api/projects/my", { withCredentials: true });
-      axios.get("/api/projects/my", {
-  headers: {
-    Authorization: `Bearer ${localStorage.getItem("token")}`
-  }
-});
+      const res = await api.get("/projects/my");
       setProject(res.data || null);
     } catch {
-      message.error("Unable to load project");
+      notify.error("Unable to load project");
     } finally {
       setLoading(false);
     }
@@ -48,19 +51,59 @@ const StudentProject = () => {
     fd.append("document", values.document.file);
 
     try {
-      //await axios.post("/api/projects", fd, { withCredentials: true });
-      axios.post("/api/projects", fd, {
-  headers: {
-    Authorization: `Bearer ${localStorage.getItem("token")}`
-  }
-});
+      await api.post("/projects", fd);
 
-      notification.success({ message: "Proposal submitted" });
+      notify.success("Proposal submitted");
       setView("project");
       loadMyProject();
     } catch {
-      notification.error({ message: "Submission failed" });
+      notify.error("Submission failed");
     }
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      proposal_submitted: "orange",
+      under_review: "blue",
+      supervisor_approved: "cyan",
+      approved: "green",
+      rejected: "red",
+      hod_approved: "green",
+      hod_rejected: "red",
+      in_progress: "blue",
+      completed: "purple",
+    };
+    return colors[status] || "default";
+  };
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      proposal_submitted: "Proposal Submitted - Waiting for Supervisor Assignment",
+      under_review: "Under Review by Supervisor",
+      supervisor_approved: "Approved by Supervisor - Pending HOD Evaluation",
+      approved: "Approved",
+      rejected: "Rejected by Supervisor",
+      hod_approved: "✓ Fully Approved (HOD & Supervisor)",
+      hod_rejected: "Rejected by HOD",
+      in_progress: "In Progress",
+      completed: "Completed",
+    };
+    return labels[status] || status;
+  };
+
+  const getStatusStep = (status) => {
+    const steps = {
+      proposal_submitted: 1,
+      under_review: 2,
+      supervisor_approved: 3,
+      hod_approved: 4,
+      hod_rejected: -1,
+      rejected: -1,
+      approved: 4,
+      in_progress: 5,
+      completed: 6,
+    };
+    return steps[status] || 0;
   };
 
   if (loading) {
@@ -74,13 +117,93 @@ const StudentProject = () => {
   return (
     <div style={{ maxWidth: 800, margin: "30px auto" }}>
       {view === "project" && (
-        <Card title="Project">
+        <Card title="My Project">
           {project ? (
             <>
               <p><strong>Title:</strong> {project.title}</p>
               <p><strong>Description:</strong> {project.description}</p>
               <p><strong>Objectives:</strong> {project.objectives}</p>
-              <p><strong>Status:</strong> {project.status}</p>
+              
+              <div style={{ marginBottom: "15px" }}>
+                <strong>Status:</strong> <Tag color={getStatusColor(project.status)} style={{ marginLeft: 8 }}>
+                  {getStatusLabel(project.status)}
+                </Tag>
+              </div>
+
+              {/* Progress Steps */}
+              {project.status !== "rejected" && project.status !== "hod_rejected" && (
+                <Card size="small" style={{ marginBottom: "15px", backgroundColor: "#f5f5f5" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ textAlign: "center", flex: 1 }}>
+                      <div style={{ 
+                        width: 30, 
+                        height: 30, 
+                        borderRadius: "50%", 
+                        backgroundColor: getStatusStep(project.status) >= 1 ? "#1890ff" : "#d9d9d9",
+                        color: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto"
+                      }}>1</div>
+                      <small>Submitted</small>
+                    </div>
+                    <div style={{ flex: 0.5, height: 2, backgroundColor: getStatusStep(project.status) >= 2 ? "#1890ff" : "#d9d9d9" }}></div>
+                    <div style={{ textAlign: "center", flex: 1 }}>
+                      <div style={{ 
+                        width: 30, 
+                        height: 30, 
+                        borderRadius: "50%", 
+                        backgroundColor: getStatusStep(project.status) >= 2 ? "#1890ff" : "#d9d9d9",
+                        color: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto"
+                      }}>2</div>
+                      <small>Supervisor<br/>Assigned</small>
+                    </div>
+                    <div style={{ flex: 0.5, height: 2, backgroundColor: getStatusStep(project.status) >= 3 ? "#1890ff" : "#d9d9d9" }}></div>
+                    <div style={{ textAlign: "center", flex: 1 }}>
+                      <div style={{ 
+                        width: 30, 
+                        height: 30, 
+                        borderRadius: "50%", 
+                        backgroundColor: getStatusStep(project.status) >= 3 ? "#1890ff" : "#d9d9d9",
+                        color: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto"
+                      }}>3</div>
+                      <small>Supervisor<br/>Approved</small>
+                    </div>
+                    <div style={{ flex: 0.5, height: 2, backgroundColor: getStatusStep(project.status) >= 4 ? "#1890ff" : "#d9d9d9" }}></div>
+                    <div style={{ textAlign: "center", flex: 1 }}>
+                      <div style={{ 
+                        width: 30, 
+                        height: 30, 
+                        borderRadius: "50%", 
+                        backgroundColor: getStatusStep(project.status) >= 4 ? "#1890ff" : "#d9d9d9",
+                        color: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto"
+                      }}>4</div>
+                      <small>HOD<br/>Approved</small>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {(project.status === "rejected" || project.status === "hod_rejected") && (
+                <Card size="small" style={{ marginBottom: "15px", backgroundColor: "#fff1f0" }}>
+                  <p style={{ color: "#cf1322", margin: 0 }}>
+                    <strong>Note:</strong> Your project proposal has been rejected. Please check the feedback and submit a new proposal if needed.
+                  </p>
+                </Card>
+              )}
 
               <Button type="primary" onClick={() => setView("proposal")} style={{ marginRight: 10 }}>
                 Update Proposal
@@ -141,13 +264,30 @@ const StudentProject = () => {
                 <List.Item key={i}>
                   <div>
                     <p>{f.text}</p>
-                    <small>{new Date(f.createdAt).toLocaleString()}</small>
+                    <small>{f.by?.name} - {new Date(f.createdAt).toLocaleString()}</small>
                   </div>
                 </List.Item>
               )}
             />
           ) : (
             <p>No feedback yet.</p>
+          )}
+
+          {project?.hodFeedback && (
+            <>
+              <h4>HOD Feedback:</h4>
+              <List
+                dataSource={[project.hodFeedback]}
+                renderItem={(f, i) => (
+                  <List.Item key={i}>
+                    <div>
+                      <p>{f.text}</p>
+                      <small>{f.by?.name} - {new Date(f.createdAt).toLocaleString()}</small>
+                    </div>
+                  </List.Item>
+                )}
+              />
+            </>
           )}
 
           <Button onClick={() => setView("project")} style={{ marginTop: 10 }}>

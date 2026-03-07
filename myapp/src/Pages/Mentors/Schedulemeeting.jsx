@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Button, Card, Row, Col, Modal, Form, Input, notification } from "antd";
+import { Button, Card, Row, Col, Modal, Form, Input } from "antd";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import notify from "../../utils/notify";
 
 const projects = [
   {
@@ -42,10 +43,10 @@ const ProjectReviewPage = () => {
 
   const handleMeetingSubmit = () => {
     const date = meetingDate ? meetingDate.toLocaleString() : "not specified";
-    notification.success({
-      message: "Meeting Scheduled",
-      description: `A meeting has been scheduled with the group members of "${selectedProject?.name}" on ${date}. The student has been notified.`,
-    });
+    notify.success(
+      "Meeting Scheduled",
+      `A meeting has been scheduled with the group members of "${selectedProject?.name}" on ${date}. The student has been notified.`
+    );
     setMeetingDate(null);
     setIsMeetingModalVisible(false);
   };

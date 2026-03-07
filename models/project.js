@@ -61,8 +61,25 @@ const projectSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ["proposal_submitted", "under_review", "approved", "rejected", "in_progress", "completed"],
+    enum: [
+      "proposal_submitted", 
+      "under_review", 
+      "supervisor_approved",  // Approved by supervisor, pending HOD evaluation
+      "approved",            // Legacy - keep for compatibility
+      "rejected",            // Rejected by supervisor
+      "hod_approved",        // Final approval by HOD
+      "hod_rejected",        // Rejected by HOD after supervisor approval
+      "in_progress", 
+      "completed"
+    ],
     default: "proposal_submitted"
+  },
+
+  hodFeedback: {
+    text: String,
+    by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    decision: { type: String, enum: ["hod_approved", "hod_rejected"] },
+    createdAt: { type: Date, default: Date.now }
   },
 
   leader: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },

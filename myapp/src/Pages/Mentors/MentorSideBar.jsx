@@ -6,6 +6,7 @@ import {
     ExceptionOutlined,
     MailOutlined,
     LogoutOutlined,
+    TeamOutlined,
   } from "@ant-design/icons";
   import { Menu } from "antd";
   import { Navigate, useNavigate } from "react-router-dom";
@@ -56,10 +57,21 @@ import {
                 marginLeft:"20px",
               }}/>,
             },
-            {
+{
               label: "Events",
               key: "/supervisor/mentorevents",
               icon: <CalendarOutlined 
+              style={{
+                color: "blue",
+                backgroundColor: "rgb(#4B91FF)",
+                fontSize: "20px",
+                marginLeft:"20px",
+              }}/>,
+            },
+            {
+              label: "CollaHub",
+              key: "/supervisor/community",
+              icon: <TeamOutlined 
               style={{
                 color: "blue",
                 backgroundColor: "rgb(#4B91FF)",

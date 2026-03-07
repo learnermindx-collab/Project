@@ -165,12 +165,15 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import User from "../models/user.js";
 import auth from "../middleware/auth.js";
 import requireRole from "../middleware/role.js";
-
+import { generateResetToken } from "../utils/resetToken.js";
 
 const router = express.Router();
+const RESET_EXPIRY_MINUTES = 5;
+const MAX_ATTEMPTS = 3;
 const The_mail = "piku450@gmail.com";
 if (!process.env.JWT_SECRET) {
   throw new Error("JWT_SECRET not defined");
@@ -236,7 +239,7 @@ router.post("/login", async (req, res) => {
 
     // 🔐 SIGN TOKEN
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id, role: user.role?.toLowerCase?.(), tokenVersion: user.tokenVersion },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -245,12 +248,23 @@ router.post("/login", async (req, res) => {
       success: true,
       message: "Login successful!",
       token,
-      role: user.role,
+      role: user.role?.toLowerCase?.(),
     });
 
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ success: false, message: "Server error. Please try again later." });
+  }
+});
+
+// LOGOUT Route (revokes existing token)
+router.post("/logout", auth, async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, { $inc: { tokenVersion: 1 } });
+    return res.status(200).json({ success: true, message: "Logged out successfully." });
+  } catch (error) {
+    console.error("Logout Error:", error);
+    return res.status(500).json({ success: false, message: "Server error. Please try again later." });
   }
 });
 
@@ -321,6 +335,88 @@ router.post("/addstudent", auth, requireRole("hod"), async (req, res) => {
   } catch (error) {
     console.error("Add Student Error:", error);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/* ---------------- FORGOT PASSWORD ---------------- */
+
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.json({ message: "If account exists, continue." });
+  }
+
+  const { rawToken, tokenHash } = generateResetToken();
+  const challengeCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+  user.passwordReset = {
+    tokenHash: crypto
+      .createHash("sha256")
+      .update(rawToken + challengeCode)
+      .digest("hex"),
+    expiresAt: new Date(Date.now() + RESET_EXPIRY_MINUTES * 60 * 1000),
+    attempts: 0
+  };
+
+  await user.save();
+
+  res.json({
+    challengeCode,
+    resetToken: rawToken,
+    expiresInMinutes: RESET_EXPIRY_MINUTES
+  });
+});
+
+/* ---------------- RESET PASSWORD ---------------- */
+
+router.post("/reset-password", async (req, res) => {
+  const { email, resetToken, challengeCode, newPassword } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user || !user.passwordReset) {
+    return res.status(400).json({ error: "Invalid or expired reset." });
+  }
+
+  const { expiresAt, attempts, tokenHash } = user.passwordReset;
+
+  if (Date.now() > expiresAt.getTime() || attempts >= MAX_ATTEMPTS) {
+    user.passwordReset = undefined;
+    await user.save();
+    return res.status(400).json({ error: "Reset expired." });
+  }
+
+  const incomingHash = crypto
+    .createHash("sha256")
+    .update(resetToken + challengeCode)
+    .digest("hex");
+
+  if (incomingHash !== tokenHash) {
+    user.passwordReset.attempts += 1;
+    await user.save();
+    return res.status(400).json({ error: "Invalid challenge." });
+  }
+
+  const salt = await bcrypt.genSalt(12);
+  user.passwordHash = await bcrypt.hash(newPassword, salt);
+
+  user.passwordReset = undefined;
+  user.tokenVersion += 1;
+
+  await user.save();
+
+  res.json({ message: "Password reset successful. Login again." });
+});
+
+// Get all supervisors (for HOD)
+router.get("/supervisors", auth, requireRole("hod"), async (req, res) => {
+  try {
+    const supervisors = await User.find({ role: "supervisor" }).select("name email _id");
+    res.json(supervisors);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Unable to load supervisors" });
   }
 });
 

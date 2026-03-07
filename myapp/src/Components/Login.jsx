@@ -10,7 +10,7 @@ import {
   message,
 } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
-import axios from 'axios';
+import axios from "axios";
 
 const { Title, Text, Link } = Typography;
 
@@ -25,20 +25,27 @@ const Login = () => {
 
       
       if (response.data.success) {
+        const token = response.data.token;
+        const role = response.data.role?.toLowerCase?.();
+
+        if (!token || typeof token !== 'string' || token.trim() === '') {
+          message.error("Login failed: Invalid token received.");
+          return;
+        }
+
         message.success("Successfully Logged In!");
 
-        
-        localStorage.setItem("role", response.data.role); 
+        localStorage.setItem("token", token);
+        localStorage.setItem("role", role);
 
-        
-         switch (response.data.role) {
-          case "HOD":
+        switch (role) {
+          case "hod":
             window.location.href = "/admin";
             break;
           case "student":
             window.location.href = "/student";
             break;
-          case "Supervisor":
+          case "supervisor":
             window.location.href = "/supervisor";
             break;
           default:

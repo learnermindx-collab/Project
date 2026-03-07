@@ -8,6 +8,7 @@ import MentorEvents from "./MentorEvents";
 import Mentorreport from "./Mentorreport";
 import MentorLogout from "./MentorLogout";
 import Schedulemeeting from "./Schedulemeeting";
+import Community from "../Community";
 import Footerpage from "../../Components/Footerpage";
 
 function MentorHomePage() {
@@ -23,6 +24,7 @@ function MentorHomePage() {
           <Route path="mentorprojects" element={<MentorProjects />}></Route>
           <Route path="schedulemeeting" element={<Schedulemeeting />}></Route>
           <Route path="mentorevents" element={<MentorEvents />}></Route>
+          <Route path="community" element={<Community />}></Route>
           <Route path="mentoreport" element={<Mentorreport />}></Route>
           <Route path="mentorlogout" element={<MentorLogout />}></Route>
           <Route path="*" element={<div>Page not found.</div>} > </Route>

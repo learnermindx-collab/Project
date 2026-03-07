@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Button,
   Card,
@@ -7,163 +7,194 @@ import {
   Modal,
   Form,
   Input,
-  Upload,
-  notification,
+  Spin,
+  Tag,
+  message,
 } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
-
-
-const projects = [
-  {
-    id: 1,
-    name: "Communication Era",
-    groupMembers: ["Alina", "Bushra", "Charlis"],
-    intro:
-      "To explore and analyze the evolution of communication technologies and their impact on society.",
-    documentUrl: "https://example.com/project-a-document.pdf",
-    proposal: {
-      title: "Communication Era Proposal",
-      description:
-        "This is a detailed description of communication Era Proposal.",
-      objective: "For checking.",
-    },
-    image: "/img8.jpg",
-  },
-  {
-    id: 2,
-    name: "Development",
-    groupMembers: ["Daoud", "Elina", "Fareeha"],
-    intro:
-      "To study the impact of technological advancements on development processes and outcomes.",
-    documentUrl: "https://example.com/project-b-document.pdf",
-    proposal: {
-      title: "Development Proposal",
-      description:
-        "This is a detailed description of the development project Proposal.",
-      objective: "For checking.",
-    },
-    image: "/img4.webp",
-  },
-  {
-    id: 3,
-    name: "Cost Management",
-    groupMembers: ["Gulzar", "Heina", "Iram"],
-    intro:
-      "To develop strategies for effectively planning, controlling, and reducing project or operational costs.",
-    documentUrl: "https://example.com/project-c-document.pdf",
-    proposal: {
-      title: "Cost Management Proposal",
-      description:
-        "This is a detailed description of Cost Management Proposal.",
-      objective: "For checking.",
-    },
-    image: "/img5.jpg",
-  },
-];
+import { CheckOutlined, CloseOutlined } from "@ant-design/icons";
+import api from "../../api";
+import notify from "../../utils/notify";
 
 const ProjectReviewPage = () => {
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState(null);
   const [feedback, setFeedback] = useState("");
-  const [uploadedFile, setUploadedFile] = useState(null);
 
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
-  const [isSendProposalVisible, setIsSendProposalVisible] = useState(false);
+  const [isApproveRejectModalVisible, setIsApproveRejectModalVisible] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+    loadProjects();
+
+    const handleFocus = () => loadProjects();
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
+
+  const loadProjects = async () => {
+    try {
+      const res = await api.get("/projects/supervisor");
+      setProjects(res.data || []);
+    } catch (err) {
+      notify.apiError(err, "Unable to load projects");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const showViewModal = (project) => {
     setSelectedProject(project);
     setIsViewModalVisible(true);
   };
 
-  const showSendProposalModal = (project) => {
+  const showApproveRejectModal = (project) => {
     setSelectedProject(project);
-    setIsSendProposalVisible(true);
+    setIsApproveRejectModalVisible(true);
   };
 
   const handleCancel = () => {
     setIsViewModalVisible(false);
-    setIsSendProposalVisible(false);
+    setIsApproveRejectModalVisible(false);
     setSelectedProject(null);
     setFeedback("");
-    setUploadedFile(null); // Reset uploaded file
   };
 
-  const handleFeedbackSubmit = () => {
-    notification.success({
-      message: "Feedback Submitted",
-      description: `Your feedback for "${selectedProject?.name}" has been submitted successfully.`,
-    });
-    handleCancel();
-  };
-
-  const handleFileUpload = (info) => {
-    if (info.file.status === "done") {
-      setUploadedFile(info.file);
-      notification.success({
-        message: "File Uploaded",
-        description: `File "${info.file.name}" uploaded successfully.`,
+  const handleFeedbackSubmit = async () => {
+    try {
+      await api.post("/projects/feedback", {
+        projectId: selectedProject._id,
+        text: feedback,
       });
+      notify.success("Feedback submitted");
+      loadProjects();
+      handleCancel();
+    } catch (err) {
+      notify.apiError(err, "Failed to submit feedback");
     }
   };
 
-  const handleSendProposal = () => {
-    if (!uploadedFile) {
-      notification.error({
-        message: "No File Uploaded",
-        description: "Please upload a file before sending the proposal.",
-      });
-      return;
+  const handleApprove = async () => {
+    try {
+      await api.post(`/projects/${selectedProject._id}/approve`);
+      notify.success("Project approved - sent to HOD for evaluation");
+      loadProjects();
+      handleCancel();
+    } catch (err) {
+      notify.apiError(err, "Failed to approve project");
     }
-
-    notification.success({
-      message: "Proposal Sent",
-      description: `The proposal for "${selectedProject?.name}" has been successfully shared with the HOD.`,
-    });
-
-    handleCancel();
   };
+
+  const handleReject = async () => {
+    try {
+      await api.post(`/projects/${selectedProject._id}/reject`);
+      notify.success("Project rejected");
+      loadProjects();
+      handleCancel();
+    } catch (err) {
+      notify.apiError(err, "Failed to reject project");
+    }
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      proposal_submitted: "orange",
+      under_review: "blue",
+      supervisor_approved: "cyan",
+      approved: "green",
+      rejected: "red",
+      hod_approved: "green",
+      hod_rejected: "red",
+      in_progress: "blue",
+      completed: "purple",
+    };
+    return colors[status] || "default";
+  };
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      proposal_submitted: "Proposal Submitted",
+      under_review: "Under Review",
+      supervisor_approved: "Awaiting HOD Evaluation",
+      approved: "Approved",
+      rejected: "Rejected",
+      hod_approved: "HOD Approved",
+      hod_rejected: "HOD Rejected",
+      in_progress: "In Progress",
+      completed: "Completed",
+    };
+    return labels[status] || status;
+  };
+
+  const canApprove = (status) => {
+    return status === "under_review";
+  };
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", marginTop: 80 }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: "0px" }}>
-      <div
-        style={{
-          paddingTop: "0px",
-          paddingBottom: "0px",
-          textAlign: "center",
-          fontSize: "30px",
-          backgroundColor: "#4D96FF",
-          color:"white",
-        }}
-      >
-        <h2>Student Projects</h2>
-      </div>
-      <Row gutter={16}>
+    <div style={{ padding: "20px" }}>
+      <h1 style={{ textAlign: "center", marginBottom: "20px" }}>Project Reviews</h1>
+
+      <Row gutter={[16, 16]}>
         {projects.map((project) => (
-          <Col span={8} key={project.id}>
+          <Col span={8} key={project._id}>
             <Card
-              title={project.name}
-              cover={<img alt={project.name} src={project.image} />}
+              hoverable
+              style={{
+                borderRadius: "8px",
+                boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+                margin: "10px",
+              }}
             >
-              <p>
-                <strong>Group Members:</strong>{" "}
-                {project.groupMembers.join(", ")}
-              </p>
-              <p>{project.intro}</p>
-              <Button
-                type="primary"
-                size="large"
-                style={{ marginRight: "25px" }}
-                onClick={() => showViewModal(project)}
-              >
-                View Details
-              </Button>
-              <Button
-                style={{ marginLeft: "20px" }}
-                type="default"
-                size="large"
-                onClick={() => showSendProposalModal(project)}
-              >
-                Send Proposal
-              </Button>
+              <Card.Meta
+                title={project.title}
+                description={
+                  <>
+                    <p><strong>Leader:</strong> {project.leader?.name || "N/A"}</p>
+                    <p><strong>Status:</strong> <Tag color={getStatusColor(project.status)}>{getStatusLabel(project.status)}</Tag></p>
+                  </>
+                }
+              />
+              <div style={{ marginTop: "10px" }}>
+                <Button
+                  type="default"
+                  style={{ marginRight: "8px" }}
+                  onClick={() => showViewModal(project)}
+                >
+                  View Details
+                </Button>
+                {canApprove(project.status) && (
+                  <Button
+                    type="primary"
+                    size="large"
+                    onClick={() => showApproveRejectModal(project)}
+                  >
+                    Approve/Reject
+                  </Button>
+                )}
+                {project.status === "supervisor_approved" && (
+                  <Tag color="cyan" style={{ marginTop: "10px" }}>
+                    Pending HOD Evaluation
+                  </Tag>
+                )}
+                {project.status === "hod_approved" && (
+                  <Tag color="green" style={{ marginTop: "10px" }}>
+                    Final Approval by HOD
+                  </Tag>
+                )}
+              </div>
             </Card>
           </Col>
         ))}
@@ -171,66 +202,101 @@ const ProjectReviewPage = () => {
 
       {/* View Details Modal */}
       <Modal
-        title={` Details for ${selectedProject?.name}`}
-        visible={isViewModalVisible}
+        title={`Details for ${selectedProject?.title}`}
+        open={isViewModalVisible}
         onCancel={handleCancel}
         footer={[
-          <Button key="submit" type="primary" onClick={handleFeedbackSubmit}>
+          canApprove(selectedProject?.status) && (
+            <Button key="approve" type="primary" onClick={showApproveRejectModal}>
+              Approve/Reject
+            </Button>
+          ),
+          <Button key="feedback" type="default" onClick={handleFeedbackSubmit}>
             Submit Feedback
           </Button>,
         ]}
+        width={700}
       >
         <h3>Project Details</h3>
         <p>
-          <strong>Title:</strong> {selectedProject?.proposal.title}
+          <strong>Title:</strong> {selectedProject?.title}
         </p>
         <p>
-          <strong>Objective:</strong> {selectedProject?.proposal.objective}
+          <strong>Description:</strong> {selectedProject?.description}
+        </p>
+        <p>
+          <strong>Objectives:</strong> {selectedProject?.objectives}
+        </p>
+        <p>
+          <strong>Leader:</strong> {selectedProject?.leader?.name} ({selectedProject?.leader?.email})
+        </p>
+        <p>
+          <strong>Status:</strong> <Tag color={getStatusColor(selectedProject?.status)}>{getStatusLabel(selectedProject?.status)}</Tag>
         </p>
         <p>
           <strong>Document:</strong>{" "}
           <a
-            href={selectedProject?.documentUrl}
+            href={`http://localhost:5000/${selectedProject?.document}`}
             target="_blank"
             rel="noopener noreferrer"
           >
             View Document
           </a>
         </p>
+        <p>
+          <strong>Feedbacks:</strong>
+        </p>
+        <ul>
+          {selectedProject?.feedbacks?.map((f, i) => (
+            <li key={i}>
+              {f.text} - {f.by?.name} ({new Date(f.createdAt).toLocaleString()})
+            </li>
+          )) || <li>No feedback yet</li>}
+        </ul>
+        
+        {selectedProject?.hodFeedback && (
+          <>
+            <p>
+              <strong>HOD Feedback:</strong>
+            </p>
+            <ul>
+              <li>
+                {selectedProject.hodFeedback.text} - {selectedProject.hodFeedback.by?.name} ({new Date(selectedProject.hodFeedback.createdAt).toLocaleString()})
+              </li>
+            </ul>
+          </>
+        )}
+        
         <Form style={{ marginTop: "20px", fontWeight: "bold" }}>
-          <Form.Item label="Feedback">
+          <Form.Item label="Add Feedback">
             <Input.TextArea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={4}
-              placeholder="Provide feedback on the document..."
+              placeholder="Provide feedback on the project..."
             />
           </Form.Item>
         </Form>
       </Modal>
 
-      {/* Send Proposal Modal */}
+      {/* Approve/Reject Modal */}
       <Modal
-        title={`Send Proposal for ${selectedProject?.name}`}
-        visible={isSendProposalVisible}
+        title={`Approve or Reject ${selectedProject?.title}`}
+        open={isApproveRejectModalVisible}
         onCancel={handleCancel}
         footer={[
-          <Button key="send" type="primary" onClick={handleSendProposal}>
-            Send Proposal
+          <Button key="approve" type="primary" icon={<CheckOutlined />} onClick={handleApprove}>
+            Approve (Send to HOD)
+          </Button>,
+          <Button key="reject" type="danger" icon={<CloseOutlined />} onClick={handleReject}>
+            Reject
           </Button>,
         ]}
       >
-        <Form>
-          <Form.Item label="Upload File">
-            <Upload
-              accept=".pdf,.doc,.docx"
-              beforeUpload={() => false} // Prevent automatic upload
-              onChange={handleFileUpload}
-            >
-              <Button icon={<UploadOutlined />}>Click to Upload</Button>
-            </Upload>
-          </Form.Item>
-        </Form>
+        <p>Do you want to approve or reject this project?</p>
+        <p style={{ color: "#666", fontSize: "12px" }}>
+          * If approved, the project will be sent to HOD for final evaluation.
+        </p>
       </Modal>
     </div>
   );

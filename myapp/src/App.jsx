@@ -8,6 +8,8 @@ import StudentHomePage from "./Pages/Students/StudentHomePage";
 import Homepage from "./Components/Homepage";
 import AboutUs from "./Components/AboutUs";
 import PrivacyPolicy from "./Components/Privacypolicy";
+import ForgotPassword from "./Components/forgotPassword";
+import ResetPassword from "./Components/resetPassword";
 import {Routes, Route} from "react-router-dom";
 
 function App() {
@@ -26,6 +28,8 @@ function App() {
       <Route path = "/admin/*" element = {<HODHomePage />} />
       <Route path = "/supervisor/*" element = {<MentorHomePage />} />
       <Route path = "/student/*" element = {<StudentHomePage />} />
+      <Route path = "/forgot-password" element = {<ForgotPassword />} />
+      <Route path = "/reset-password" element = {<ResetPassword />} />
       </Routes>
     </>
   );

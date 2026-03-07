@@ -8,6 +8,7 @@ import StudentEvents from "./StudentEvents";
 import StudentLogout from "./StudentLogout";
 import Studentreport from "./Studentreport";
 import Github from "./Github";
+import Community from "../Community";
 import Footerpage from "../../Components/Footerpage";
 
 function StudentHomePage() {
@@ -23,6 +24,7 @@ function StudentHomePage() {
           <Route path="studentevents" element={< StudentEvents />}></Route>
           <Route path="studentreport" element={< Studentreport />}></Route>
           <Route path="github" element={<Github />}></Route>
+          <Route path="community" element={<Community />}></Route>
           <Route path="studentlogout" element={<StudentLogout />}></Route>
           <Route path="*" element = {<div>Page not found.</div>} > </Route>
         </Routes>

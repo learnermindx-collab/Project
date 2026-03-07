@@ -203,58 +203,59 @@
 
 
 
-import express from "express";
-import Project from "../models/project.js";
-import multer from "multer";
-import auth from "../middleware/auth.js";
-import requireRole from "../middleware/role.js";
+// Commented out old unsynced code
+// import express from "express";
+// import Project from "../models/project.js";
+// import multer from "multer";
+// import auth from "../middleware/auth.js";
+// import requireRole from "../middleware/role.js";
 
-const router = express.Router();
+// const router = express.Router();
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
-});
-const upload = multer({ storage });
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => cb(null, "uploads/"),
+//   filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+// });
+// const upload = multer({ storage });
 
-// Student
-router.post("/", auth, requireRole("student"), upload.single("document"), async (req, res) => {
-  const project = await Project.create({
-    ...req.body,
-    document: req.file.path,
-    leader: req.user._id,
-    status: "proposal_submitted",
-  });
-  res.status(201).json(project);
-});
+// // Student
+// router.post("/", auth, requireRole("student"), upload.single("document"), async (req, res) => {
+//   const project = await Project.create({
+//     ...req.body,
+//     document: req.file.path,
+//     leader: req.user._id,
+//     status: "proposal_submitted",
+//   });
+//   res.status(201).json(project);
+// });
 
-router.get("/my", auth, requireRole("student"), async (req, res) => {
-  const project = await Project.findOne({ leader: req.user._id });
-  res.json(project);
-});
+// router.get("/my", auth, requireRole("student"), async (req, res) => {
+//   const project = await Project.findOne({ leader: req.user._id });
+//   res.json(project);
+// });
 
-// Supervisor
-router.get("/supervisor", auth, requireRole("Supervisor"), async (req, res) => {
-  const projects = await Project.find({ supervisor: req.user._id });
-  res.json(projects);
-});
+// // Supervisor
+// router.get("/supervisor", auth, requireRole("Supervisor"), async (req, res) => {
+//   const projects = await Project.find({ supervisor: req.user._id });
+//   res.json(projects);
+// });
 
-router.post("/:id/feedback", auth, requireRole("Supervisor"), async (req, res) => {
-  const project = await Project.findById(req.params.id);
-  project.feedbacks.push({ text: req.body.text, by: req.user._id });
-  project.status = "under_review";
-  await project.save();
-  res.json(project);
-});
+// router.post("/:id/feedback", auth, requireRole("Supervisor"), async (req, res) => {
+//   const project = await Project.findById(req.params.id);
+//   project.feedbacks.push({ text: req.body.text, by: req.user._id });
+//   project.status = "under_review";
+//   await project.save();
+//   res.json(project);
+// });
 
-router.post("/:id/approve", auth, requireRole("Supervisor"), async (req, res) => {
-  await Project.findByIdAndUpdate(req.params.id, { status: "approved" });
-  res.sendStatus(200);
-});
+// router.post("/:id/approve", auth, requireRole("Supervisor"), async (req, res) => {
+//   await Project.findByIdAndUpdate(req.params.id, { status: "approved" });
+//   res.sendStatus(200);
+// });
 
-router.post("/:id/reject", auth, requireRole("Supervisor"), async (req, res) => {
-  await Project.findByIdAndUpdate(req.params.id, { status: "rejected" });
-  res.sendStatus(200);
-});
+// router.post("/:id/reject", auth, requireRole("Supervisor"), async (req, res) => {
+//   await Project.findByIdAndUpdate(req.params.id, { status: "rejected" });
+//   res.sendStatus(200);
+// });
 
-export default router;
+// export default router;

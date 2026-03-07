@@ -14,16 +14,38 @@ const [loading, setLoading] = useState(false);
   const onFinish =  async (values) => {
     setLoading(true);
     try{
+      // Check if user is logged in
+      const token = localStorage.getItem("token");
+      const role = localStorage.getItem("role");
+      
+      if (!token) {
+        message.error("Please log in first");
+        return;
+      }
+      
+      if (role?.toLowerCase() !== "hod") {
+        message.error("Only HOD can add supervisors");
+        return;
+      }
+
       const response = await api.post( "/auth/addsupervisor", values);
 
-      if (response.data.success){
+      if (response.data.success || response.status === 201){
         message.success("Added Successfully.");
-
-        localStorage.setItem("token", response.data.token);
+        form.resetFields();
       }
 
     }catch (error) {
-    // handle error
+      setLoading(false);
+      if (error.response?.status === 403) {
+        message.error("Forbidden: You don't have permission to add supervisors");
+      } else if (error.response?.status === 401) {
+        message.error("Unauthorized: Please log in again");
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+      } else {
+        message.error(error.response?.data?.message || "Failed to add supervisor");
+      }
   }
     // console.log("Form Values:", values);
     // form.resetFields();
