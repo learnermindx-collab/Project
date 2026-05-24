@@ -10,6 +10,10 @@ import {
   rejectProject,
   evaluateProject
 } from "../controller/projectController.js";
+import {
+  getMyGroup,
+  uploadGroupLogo
+} from "../controller/groupController.js";
 import upload from "../middleware/upload.js";
 import authMiddleware from "../middleware/auth.js";
 import requireRole from "../middleware/role.js";
@@ -19,6 +23,10 @@ const projectRouter = express.Router();
 // Student routes
 projectRouter.get("/my", authMiddleware, requireRole("student"), getMyProject);
 projectRouter.post("/", authMiddleware, requireRole("student"), upload.single("document"), submitProject);
+
+// Student group routes
+projectRouter.get("/mygroup", authMiddleware, requireRole("student"), getMyGroup);
+projectRouter.post("/group/:id/upload-logo", authMiddleware, requireRole("student"), upload.single("logo"), uploadGroupLogo);
 
 // Supervisor routes
 projectRouter.get("/supervisor", authMiddleware, requireRole("supervisor"), getSupervisorProjects);

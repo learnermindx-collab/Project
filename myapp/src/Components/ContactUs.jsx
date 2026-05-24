@@ -117,16 +117,18 @@ const ContactUs = () => {
 //  CSS 
 const styles = {
   container: {
-    padding: "40px 20px",
-    maxWidth: "900px",
+    /* OLD NON-RESPONSIVE: fixed padding */
+    /* NEW RESPONSIVE: clamp padding */
+    padding: "clamp(1rem, 5vw, 4rem) clamp(0.5rem, 3vw, 2rem)",
+    maxWidth: "min(900px, 95vw)",
     margin: "0 auto",
     fontFamily: "Arial, sans-serif",
   },
   card: {
-    marginBottom: "30px",
+    marginBottom: "clamp(1rem, 2vw, 2rem)",
     borderRadius: "10px",
     boxShadow: "0 10px 30px rgba(0, 0, 0, 0.1)",
-    padding: "40px 30px",
+    padding: "clamp(1.5rem, 4vw, 3rem)",
     backgroundColor: "#fff",
   },
   header: {

@@ -212,13 +212,15 @@ const SignUp = () => {
         <img
           src="signup1.jpg"
           alt="Signup"
-          style={{ width: "100%", height: "485px", borderRadius: "2px" }}
+          style={{ /* OLD NON-RESPONSIVE: fixed height */ /* NEW RESPONSIVE: auto */ width: "100%", height: "auto", maxHeight: "500px", borderRadius: "2px" }}
         />
       </Col>
       <Col lg={8}>
         <div
           style={{
-            padding: "10px",
+            /* OLD NON-RESPONSIVE: fixed padding */
+            /* NEW RESPONSIVE: clamp */
+            padding: "clamp(1rem, 4vw, 2rem)",
             background: "#fff",
             borderRadius: "2px",
           }}

@@ -14,7 +14,9 @@ import {
   message,
   Select,
   Tag,
+  Space,
 } from "antd";
+import io from "socket.io-client";
 import moment from "moment";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -36,6 +38,19 @@ const EventsPage = () => {
   // Fetch events from API on component mount
   useEffect(() => {
     fetchEvents();
+
+    const socket = io("http://localhost:5000");
+    const userId = localStorage.getItem('userId') || (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user'))._id : null);
+    if (userId) {
+      socket.emit('join', userId);
+      socket.on('notification', (notification) => {
+        fetchEvents();
+      });
+    }
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   // Fetch events from backend
@@ -123,6 +138,33 @@ const EventsPage = () => {
   const handleSelectEvent = (event) => {
     setSelectedEvent(event);
     setDetailsVisible(true);
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    Modal.confirm({
+      title: 'Delete Event',
+      content: 'Are you sure you want to delete this event?',
+      onOk: async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(`/api/events/${eventId}`, {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          if (response.ok) {
+            message.success('Event deleted successfully');
+            fetchEvents();
+          } else {
+            message.error('Failed to delete event');
+          }
+        } catch (error) {
+          console.error('Delete error:', error);
+          message.error('Failed to delete event');
+        }
+      }
+    });
   };
 
   // Export events as PDF

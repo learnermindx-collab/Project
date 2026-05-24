@@ -56,6 +56,11 @@ router.post('/event', auth, async (req, res) => {
     // Create notifications for each user in the specified roles and emit real-time events
     const notifications = await Promise.all(
       users.map(async (user) => {
+        // Skip creator
+        if (user._id.toString() === req.user._id.toString()) {
+          return null;
+        }
+
         const notification = new Notification({
           userId: user._id.toString(),
           fromUserId: req.user._id.toString(),
@@ -78,7 +83,7 @@ router.post('/event', auth, async (req, res) => {
         }
         
         return savedNotification;
-      })
+      }).filter(Boolean)  // Remove null (creator)
     );
 
     res.status(201).json({ 

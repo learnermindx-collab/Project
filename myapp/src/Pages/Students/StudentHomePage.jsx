@@ -5,6 +5,7 @@ import StudentsSideBar from "./StudentSideBar";
 import StudentDashboard from "./StudentDashboard";
 import StudentProjects from "./StudentProjects";
 import StudentEvents from "./StudentEvents";
+import Group from "./Group";
 import StudentLogout from "./StudentLogout";
 import Studentreport from "./Studentreport";
 import Github from "./Github";
@@ -22,6 +23,7 @@ function StudentHomePage() {
           <Route path="/" element={<StudentDashboard />}></Route>
           <Route path="studentprojects" element={<StudentProjects />}></Route>
           <Route path="studentevents" element={< StudentEvents />}></Route>
+          <Route path="group" element={<Group />}></Route>
           <Route path="studentreport" element={< Studentreport />}></Route>
           <Route path="github" element={<Github />}></Route>
           <Route path="community" element={<Community />}></Route>

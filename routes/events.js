@@ -38,7 +38,7 @@ router.post('/', auth, async (req, res) => {
       time,
       location: location || 'TBD',
       description: description || '',
-      notifyRoles: notifyRoles || ['HOD', 'Mentor', 'Student'],
+      notifyRoles: notifyRoles || ['hod', 'mentor', 'student'], // Default to notify all roles if not specified
       createdBy: userRole
     });
 

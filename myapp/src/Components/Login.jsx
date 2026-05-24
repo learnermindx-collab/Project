@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Form,
   Input,
@@ -20,10 +20,8 @@ const Login = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      
       const response = await axios.post("http://localhost:5000/api/auth/login", values);
 
-      
       if (response.data.success) {
         const token = response.data.token;
         const role = response.data.role?.toLowerCase?.();
@@ -37,6 +35,18 @@ const Login = () => {
 
         localStorage.setItem("token", token);
         localStorage.setItem("role", role);
+
+        // Fetch user profile
+        try {
+          const profileRes = await axios.get("http://localhost:5000/api/auth/me", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (profileRes.data.success) {
+            localStorage.setItem("user", JSON.stringify(profileRes.data.user));
+          }
+        } catch (err) {
+          console.error("Failed to fetch profile:", err);
+        }
 
         switch (role) {
           case "hod":
@@ -69,9 +79,11 @@ const Login = () => {
       style={{ minHeight: "100vh", background: "#f0f2f5" }}
     >
       <Col lg={8}>
-        <div
+          <div
           style={{
-            padding: "30px",
+            /* OLD NON-RESPONSIVE: fixed padding */
+            /* NEW RESPONSIVE: clamp */
+            padding: "clamp(1.5rem, 5vw, 3rem)",
             background: "#fff",
             borderRadius: "2px",
           }}
@@ -133,14 +145,15 @@ const Login = () => {
           </div>
         </div>
       </Col>
-      <Col  lg={8} style={{ textAlign: "center" }}>
+      <Col lg={8} style={{ textAlign: "center" }}>
         <img
           src="login.png" 
-          alt="Login"
-          style={{ width: "100%", height: "408px", borderRadius: "2px" }}
+          alt="Login image"
+          style={{ /* OLD NON-RESPONSIVE: fixed height */ /* NEW RESPONSIVE: auto height */ width: "100%", height: "auto", maxHeight: "500px", borderRadius: "2px" }}
         />
       </Col>
     </Row>
   );
 };
 export default Login;
+

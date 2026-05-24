@@ -8,7 +8,7 @@ const statsrouter = express.Router();
 statsrouter.get("/stats", async (req, res) => {
   const [
     totalStudents,
-    totalMentors,
+    totalSupervisors,
     totalGroups,
     totalProjects,
     progressProjects,
@@ -17,7 +17,7 @@ statsrouter.get("/stats", async (req, res) => {
     eventsWithinWeek
   ] = await Promise.all([
     User.countDocuments({ role: "student" }),
-    User.countDocuments({ role: "mentor" }),
+    User.countDocuments({ role: "supervisor" }),
     Group.countDocuments(),
     Project.countDocuments(),
     Project.countDocuments({ status: "in_progress" }),
@@ -33,7 +33,7 @@ statsrouter.get("/stats", async (req, res) => {
 
   res.json({
     totalStudents,
-    totalMentors,
+    totalSupervisors,
     totalGroups,
     totalProjects,
     progressProjects,

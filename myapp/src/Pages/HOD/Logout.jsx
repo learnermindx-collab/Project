@@ -24,11 +24,11 @@ function Logout() {
         // Even if logout fails, we still clear local state
         console.error("Logout error:", err);
       } finally {
-        localStorage.removeItem("token");
-        localStorage.removeItem("role");
+        localStorage.clear();
         message.success("Logged out successfully");
         window.location.href = "/login";
       }
+
     };
 
     logout();

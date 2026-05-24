@@ -75,6 +75,11 @@ const projectSchema = new mongoose.Schema({
     default: "proposal_submitted"
   },
 
+  group: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Group' 
+  },
+
   hodFeedback: {
     text: String,
     by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

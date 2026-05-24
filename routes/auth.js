@@ -1,3 +1,34 @@
+// const router = express.Router();
+// import express from "express";
+// import User from "../models/user.js";
+// import auth from "../middleware/auth.js";
+// import requireRole from "../middleware/role.js";
+// router.get("/me", auth, async (req, res) => {
+//   try {
+//     const user = await User.findById(req.user.id || req.user._id).select("name email role");
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+//     res.json({ success: true, user });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// });
+
+// // Get all supervisors (for HOD)
+// router.get("/supervisors", auth, requireRole("hod"), async (req, res) => {
+//   try {
+//     const supervisors = await User.find({ role: "supervisor" }).select("name email _id");
+//     res.json(supervisors);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Unable to load supervisors" });
+//   }
+// });
+// export default router;
+
+
 // import express from "express";
 // import bcrypt from "bcrypt";
 // import jwt from "jsonwebtoken";
@@ -219,6 +250,46 @@ router.post("/signup", async (req, res) => {
 });
 
 // LOGIN Route (now issues token)
+// router.post("/login", async (req, res) => {
+//   const { email, password } = req.body;
+
+//   if (!email || !password) {
+//     return res.status(400).json({ success: false, message: "Email and password are required." });
+//   }
+
+//   try {
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       return res.status(401).json({ success: false, message: "Invalid email or password." });
+//     }
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res.status(401).json({ success: false, message: "Invalid email or password." });
+//     }
+
+//     // 🔐 SIGN TOKEN
+//     const token = jwt.sign(
+//       { id: user._id, role: user.role?.toLowerCase?.(), tokenVersion: user.tokenVersion },
+//       process.env.JWT_SECRET,
+//       { expiresIn: "1d" }
+//     );
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Login successful!",
+//       token,
+//       role: user.role?.toLowerCase?.(),
+//     });
+
+//   } catch (error) {
+//     console.error("Login Error:", error);
+//     res.status(500).json({ success: false, message: "Server error. Please try again later." });
+//   }
+// });
+
+// routes/auth.js - LOGIN Route (CLEAN VERSION)
+// LOGIN Route - FIXED VERSION
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -237,18 +308,26 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ success: false, message: "Invalid email or password." });
     }
 
-    // 🔐 SIGN TOKEN
+    // ✅ FIX: Consistent role casing and include tokenVersion
+    const normalizedRole = user.role?.toLowerCase();
+    
     const token = jwt.sign(
-      { id: user._id, role: user.role?.toLowerCase?.(), tokenVersion: user.tokenVersion },
+      { 
+        id: user._id, 
+        role: normalizedRole, 
+        tokenVersion: user.tokenVersion || 0 
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
+
+    console.log(`✅ Login successful - User: ${user.email}, Role: ${normalizedRole}, TokenVersion: ${user.tokenVersion || 0}`);
 
     res.status(200).json({
       success: true,
       message: "Login successful!",
       token,
-      role: user.role?.toLowerCase?.(),
+      role: normalizedRole,
     });
 
   } catch (error) {
@@ -267,6 +346,22 @@ router.post("/logout", auth, async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error. Please try again later." });
   }
 });
+
+// FIXED: Added missing /api/auth/me endpoint (caused 0.02s login rollback)
+// Date: $(date +%Y-%m-%d %H:%M)
+router.get("/me", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("name email role");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error("GET /me error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 // Add Supervisor
 router.post("/addsupervisor", auth, requireRole("hod"), async (req, res) => {

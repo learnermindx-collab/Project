@@ -27,12 +27,9 @@ import {
               label: "Home",
               icon: <AppstoreOutlined 
               style={{
-                color: "blue",
-                backgroundColor: "rgb(#4B91FF)",
-                fontSize: "20px",
-                marginLeft:"20px",
-              }}
-              />,
+                color: "#1890ff",
+                fontSize: "1.5rem",
+              }} />,
               key: "/supervisor",
             },
             {
@@ -40,54 +37,44 @@ import {
               key: "/supervisor/mentorprojects",
               icon: <ProfileOutlined 
               style={{
-                color: "blue",
-                backgroundColor: "rgb(#4B91FF)",
-                fontSize: "20px",
-                marginLeft:"20px",
-              }}/>,
+                color: "#1890ff",
+                fontSize: "1.5rem",
+              }} />,
             },
             {
               label: "Schedule Meeting",
               key: "/supervisor/schedulemeeting",
               icon: <CalendarOutlined 
               style={{
-                color: "blue",
-                backgroundColor: "rgb(#4B91FF)",
-                fontSize: "20px",
-                marginLeft:"20px",
-              }}/>,
+                color: "#1890ff",
+                fontSize: "1.5rem",
+              }} />,
             },
 {
               label: "Events",
               key: "/supervisor/mentorevents",
               icon: <CalendarOutlined 
               style={{
-                color: "blue",
-                backgroundColor: "rgb(#4B91FF)",
-                fontSize: "20px",
-                marginLeft:"20px",
-              }}/>,
+                color: "#1890ff",
+                fontSize: "1.5rem",
+              }} />,
             },
             {
               label: "CollaHub",
               key: "/supervisor/community",
               icon: <TeamOutlined 
               style={{
-                color: "blue",
-                backgroundColor: "rgb(#4B91FF)",
-                fontSize: "20px",
-                marginLeft:"20px",
-              }}/>,
+                color: "#1890ff",
+                fontSize: "1.5rem",
+              }} />,
             },
             {
               label: "Report",
               key: "/supervisor/mentoreport",
               icon: <ExceptionOutlined
               style={{
-                color: "blue",
-                backgroundColor: "rgb(#4B91FF)",
-                fontSize: "20px",
-                marginLeft:"20px",
+                color: "#1890ff",
+                fontSize: "1.5rem",
               }} />,
             },
           
@@ -96,11 +83,9 @@ import {
               key: "/supervisor/mentorlogout",
               icon: <LogoutOutlined 
               style={{
-                color: "blue",
-                backgroundColor: "rgb(#4B91FF)",
-                fontSize: "20px",
-                marginLeft:"20px",
-              }}/>,
+                color: "#1890ff",
+                fontSize: "1.5rem",
+              }} />,
             },
             
           ]}

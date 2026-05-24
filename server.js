@@ -14,10 +14,12 @@ import communityRouter from './routes/community.js';
 import meetingRouter from './routes/meetings.js';
 import eventsRouter from './routes/events.js';
 import githubRouter from './routes/github.js';
-
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 dotenv.config();
 
 const app = express();
+// Security middleware\napp.use(helmet());\n\nconst limiter = rateLimit({\n  windowMs: 15 * 60 * 1000, // 15 minutes\n  max: 100, // limit each IP to 100 requests per windowMs\n  message: { message: 'Too many requests from this IP, please try again later.' },\n  standardHeaders: true,\n  legacyHeaders: false,\n});\napp.use('/api/', limiter);
 const server = createServer(app);
 const io = new Server(server, {
   cors: {

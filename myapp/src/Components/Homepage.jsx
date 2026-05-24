@@ -37,7 +37,10 @@ const App = () => {
         {/* Hero Section */}
         <section
           style={{
-            height: "70vh",
+            /* OLD NON-RESPONSIVE: fixed height */
+            /* NEW RESPONSIVE: min-height */
+            minHeight: "70vh",
+            height: "auto",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -45,7 +48,7 @@ const App = () => {
             background: "linear-gradient(135deg, #60C2E1, #264BAE)",
             color: "white",
             textAlign: "center",
-            padding: "20px",
+            padding: "clamp(1rem, 5vw, 2rem)",
           }}
         >
           <h1
@@ -133,7 +136,7 @@ const App = () => {
         {/* Features Section */}
         <section
           style={{
-            padding: "50px 20px",
+            padding: "clamp(2rem, 8vw, 5rem) clamp(1rem, 5vw, 2rem)",
             backgroundColor: "#f9f9f9",
             textAlign: "center",
             color: "#4D96FF",
@@ -148,12 +151,16 @@ const App = () => {
              Features
           </h1>
           <div
-            style={{
+          style={{
+              /* OLD NON-RESPONSIVE: fixed maxWidth/gap overflow mobile */
+              /* NEW RESPONSIVE: full width, column mobile */
               display: "flex",
-              justifyContent: "space-between",
-              gap: "20px",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              gap: "clamp(1rem, 3vw, 2rem)",
               margin: "0 auto",
-              maxWidth: "1100px",
+              maxWidth: "100%",
+              padding: "0 clamp(1rem, 5vw, 4rem)",
             }}
           >
             {/* Feature 1 */}

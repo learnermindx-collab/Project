@@ -30,10 +30,8 @@ function SideBar() {
             icon: (
               <AppstoreOutlined
                 style={{
-                  color: "blue",
-                  backgroundColor: "rgb(#4B91FF)",
-                  fontSize: "20px",
-                  marginLeft: "20px",
+                  color: "#1890ff",
+                  fontSize: "1.5rem",
                 }}
               />
             ),
@@ -45,10 +43,8 @@ function SideBar() {
             icon: (
               <UserAddOutlined
                 style={{
-                  color: "blue",
-                  backgroundColor: "rgb(#4B91FF)",
-                  fontSize: "20px",
-                  marginLeft: "20px",
+                  color: "#1890ff",
+                  fontSize: "1.5rem",
                 }}
               />
             ),
@@ -59,10 +55,8 @@ function SideBar() {
             icon: (
               <UsergroupAddOutlined
                 style={{
-                  color: "blue",
-                  backgroundColor: "rgb(#4B91FF)",
-                  fontSize: "20px",
-                  marginLeft: "20px",
+                  color: "#1890ff",
+                  fontSize: "1.5rem",
                 }}
               />
             ),
@@ -73,10 +67,8 @@ function SideBar() {
             icon: (
               <ProfileOutlined
                 style={{
-                  color: "blue",
-                  backgroundColor: "rgb(#4B91FF)",
-                  fontSize: "20px",
-                  marginLeft: "20px",
+                  color: "#1890ff",
+                  fontSize: "1.5rem",
                 }}
               />
             ),
@@ -87,10 +79,8 @@ function SideBar() {
             icon: (
               <CalendarOutlined
                 style={{
-                  color: "blue",
-                  backgroundColor: "rgb(#4B91FF)",
-                  fontSize: "20px",
-                  marginLeft: "20px",
+                  color: "#1890ff",
+                  fontSize: "1.5rem",
                 }}
               />
             ),
@@ -101,10 +91,8 @@ function SideBar() {
             icon: (
               <TeamOutlined
                 style={{
-                  color: "blue",
-                  backgroundColor: "rgb(#4B91FF)",
-                  fontSize: "20px",
-                  marginLeft: "20px",
+                  color: "#1890ff",
+                  fontSize: "1.5rem",
                 }}
               />
             ),
@@ -115,10 +103,8 @@ function SideBar() {
             icon: (
               <IssuesCloseOutlined
                 style={{
-                  color: "blue",
-                  backgroundColor: "rgb(#4B91FF)",
-                  fontSize: "20px",
-                  marginLeft: "20px",
+                  color: "#1890ff",
+                  fontSize: "1.5rem",
                 }}
               />
             ),
@@ -130,10 +116,8 @@ function SideBar() {
             icon: (
               <LogoutOutlined
                 style={{
-                  color: "blue",
-                  backgroundColor: "rgb(#4B91FF)",
-                  fontSize: "20px",
-                  marginLeft: "20px",
+                  color: "#1890ff",
+                  fontSize: "1.5rem",
                 }}
               />
             ),

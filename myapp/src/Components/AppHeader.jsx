@@ -1,5 +1,5 @@
 import { BellFilled, UserAddOutlined } from "@ant-design/icons";
-import { Avatar, Badge, Image, List, Space, Typography, Dropdown, Button, Menu, Divider } from "antd";
+import { Avatar, Badge, Image, List, Space, Typography, Dropdown, Button } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import axios from "axios";
@@ -8,15 +8,36 @@ import notify from "../utils/notify";
 function AppHeader() {
   const [notificationCount, setNotificationCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
+  const [userName, setUserName] = useState("User");
   const socketRef = useRef(null);
   const audioRef = useRef(null);
 
   useEffect(() => {
+    // Load user name from localStorage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserName(user.name || 'User');
+      } catch (e) {
+        console.error('Failed to parse user:', e);
+      }
+    }
+
     // Initialize socket connection
     socketRef.current = io('http://localhost:5000');
 
-    // Join user room (assuming user ID is stored in localStorage)
-    const userId = localStorage.getItem('userId');
+    // Join user room
+    let userId = localStorage.getItem('userId');
+    const userStrForId = localStorage.getItem('user');
+    if (userStrForId) {
+      try {
+        const user = JSON.parse(userStrForId);
+        userId = user._id || userId;
+      } catch (e) {
+        console.error('Failed to parse user for ID:', e);
+      }
+    }
     if (userId) {
       socketRef.current.emit('join', userId);
     }
@@ -79,7 +100,7 @@ function AppHeader() {
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setNotificationCount(0);
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      console.error('Error marking all as read:', error);
     }
   };
 
@@ -127,7 +148,7 @@ function AppHeader() {
                     <span style={{ fontWeight: item.read ? 'normal' : 'bold' }}>
                       {item.message}
                     </span>
-                    {!item.read && <span style={{ color: '#52c41a', marginLeft: '8px' }}>●</span>}
+                    {!item.read && <span style={{ color: '#52c41a', marginLeft: '8px' }} >●</span>}
                   </div>
                 }
                 description={
@@ -142,11 +163,13 @@ function AppHeader() {
       )}
     </div>
   );
-
+// OLD: fixed 200x100, NEW: smaller responsive
   return (
     <div className="AppHeader">
-      <Image width={200} src="Collabora.png" height="100"></Image>
-      <Typography.Title>Welcome Back Sadaf</Typography.Title>
+      
+      <Image width={150} src="Collabora.png" height={60} preview={false}></Image> 
+      
+      <Typography.Title>Welcome Back {userName}</Typography.Title>
 
       <Space size={15}>
         <Avatar
@@ -166,3 +189,4 @@ function AppHeader() {
   );
 }
 export default AppHeader;
+

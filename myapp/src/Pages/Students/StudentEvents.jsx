@@ -14,7 +14,9 @@ import {
   message,
   Select,
   Tag,
+  Space,
 } from "antd";
+import io from "socket.io-client";
 import moment from "moment";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -36,6 +38,19 @@ const EventsPage = () => {
   // Fetch events from API on component mount
   useEffect(() => {
     fetchEvents();
+
+    const socket = io("http://localhost:5000");
+    const userId = localStorage.getItem('userId') || (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user'))._id : null);
+    if (userId) {
+      socket.emit('join', userId);
+      socket.on('notification', (notification) => {
+        fetchEvents();
+      });
+    }
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   // Fetch events from backend
@@ -204,12 +219,12 @@ const EventsPage = () => {
             paddingBottom: "2px",
           }}
         >
-          <h1>Events Management - Student</h1>
+          <h1>Events Management </h1>
         </div>
 
         {/* All Events for Student */}
         <div style={{ marginBottom: "34px", fontSize: "25px" }}>
-          <h2>My Events (Student)</h2>
+          <h2>My Events</h2>
           <List
             grid={{ gutter: 16, column: 3 }}
             dataSource={studentEvents}

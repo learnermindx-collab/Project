@@ -10,7 +10,8 @@ import {
   ClockCircleOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
-import axios from "axios";
+import api from "../../api.js";
+import { useNavigate } from "react-router-dom";
 import io from "socket.io-client";
 
 const { Meta } = Card;
@@ -19,6 +20,8 @@ const { Option } = Select;
 const socket = io("http://localhost:5000");
 
 const CardGrid = () => {
+  const navigate = useNavigate();
+
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalMentors: 0,
@@ -40,8 +43,8 @@ const CardGrid = () => {
       icon: <UserOutlined />,
     },
     {
-      title: "Total Mentors",
-      count: stats.totalMentors,
+      title: "Total Supervisors",
+      count: stats.totalSupervisors,
       icon: <TeamOutlined />,
     },
     {
@@ -78,6 +81,10 @@ const CardGrid = () => {
     },
   ];
 
+  // FIXED: Removed redundant /auth/me check (caused instant logout) - $(date +%Y-%m-%d %H:%M)
+  // Global api.js 401 interceptor handles auth failures
+
+
   useEffect(() => {
     fetchStats();
     fetchDiscussions();
@@ -100,10 +107,7 @@ const CardGrid = () => {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/stats/stats', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get('/stats/stats');
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -112,10 +116,7 @@ const CardGrid = () => {
 
   const fetchDiscussions = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/discussions', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get('/discussions');
       setDiscussions(response.data);
     } catch (error) {
       console.error('Error fetching discussions:', error);
@@ -124,10 +125,7 @@ const CardGrid = () => {
 
   const handleIssueSubmit = async (values) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/issues', values, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.post('/issues', values);
       message.success('Issue submitted successfully!');
       setIsModalVisible(false);
       form.resetFields();
@@ -138,11 +136,11 @@ const CardGrid = () => {
 
   return (
     <>
-      <Row gutter={16} style={{ padding: "30px" }}>
-        <Col span={16}>
+<Row gutter={[16, 16]} style={{ padding: "clamp(1rem, 5vw, 2rem)" }}>
+        <Col xs={24} lg={16}>
           <Row gutter={16}>
             {cardData.slice(0, 6).map((data, index) => (
-              <Col span={8} key={index}>
+              <Col xs={24} sm={12} md={8} key={index}>
                 <Card hoverable className="card">
                   <div className="card-content">
                     <div className="card-icon">{data.icon}</div>
@@ -157,7 +155,7 @@ const CardGrid = () => {
           </Row>
           <Row gutter={16} style={{ marginTop: "24px" }}>
             {cardData.slice(6).map((data, index) => (
-              <Col span={12} key={index}>
+              <Col xs={24} sm={12} key={index}>
                 <Card hoverable className="card">
                   <div className="card-content">
                     <div className="card-icon">{data.icon}</div>
@@ -173,7 +171,7 @@ const CardGrid = () => {
         </Col>
 
         {/* Right part for discussions */}
-        <Col span={8}>
+        <Col xs={24} sm={8}>
           <div
             style={{
               padding: "20px",

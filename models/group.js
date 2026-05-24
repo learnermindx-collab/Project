@@ -5,12 +5,30 @@ const groupSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-    description: {
+  description: {
     type: String,
     required: false
   },
+  project: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Project',
+    required: true
+  },
+  logo: {
+    type: String,
+    default: ''
+  },
   members: [
-    {type: mongoose.Schema.Types.ObjectId, ref: 'User'}],
-  }, {timestamps: true});
+    {
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'User'
+    }
+  ],
+  membersInfo: [{
+    id: String,
+    name: String,
+    email: String
+  }],
+}, {timestamps: true});
 
   export default mongoose.model('Group', groupSchema);

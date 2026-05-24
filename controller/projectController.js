@@ -1,21 +1,42 @@
 // controllers/projectController.js
 import Project from "../models/project.js";
+import Group from "../models/group.js";
+import User from "../models/user.js";
 import Notification from "../models/notification.js";
 
 // GET my project
+import getRedis from "../config/redis.js";
+
 export const getMyProject = async (req, res) => {
+  const cacheKey = `projects:my:${req.user._id}`;
   try {
+    const redis = await getRedis();
+    let cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+      console.log('Cache HIT:', cacheKey);
+      return res.json(JSON.parse(cachedData));
+    }
+    console.log('Cache MISS:', cacheKey);
+
     const project = await Project.findOne({ leader: req.user._id })
       .populate("feedbacks.by", "name email")
       .populate("supervisor", "name email")
       .populate("members", "name email")
       .populate("hodFeedback.by", "name email");
 
-    if (!project) return res.json(null); // frontend handles null
+    if (!project) {
+      try {
+        await redis.setEx(cacheKey, 60, JSON.stringify(null));
+      } catch (e) { }
+      return res.json(null);
+    }
 
+    try {
+      await redis.setEx(cacheKey, 300, JSON.stringify(project));
+    } catch (e) { }
     res.json(project);
   } catch (err) {
-    console.error(err);
+    console.error('Error in getMyProject:', err);
     res.status(500).json({ message: "Unable to load project" });
   }
 };
@@ -80,23 +101,44 @@ export const addFeedback = async (req, res) => {
 
 // GET projects for supervisor
 export const getSupervisorProjects = async (req, res) => {
+  const cacheKey = `projects:supervisor:${req.user._id}`;
   try {
+    const redis = await getRedis();
+    let cachedProjects = await redis.get(cacheKey);
+    if (cachedProjects) {
+      console.log('Cache HIT:', cacheKey);
+      return res.json(JSON.parse(cachedProjects));
+    }
+    console.log('Cache MISS:', cacheKey);
+
     const projects = await Project.find({ supervisor: req.user._id })
       .populate("leader", "name email")
       .populate("members", "name email")
       .populate("feedbacks.by", "name email")
       .sort({ submittedAt: -1 });
 
+    try {
+      await redis.setEx(cacheKey, 300, JSON.stringify(projects));
+    } catch (e) { }
     res.json(projects);
   } catch (err) {
-    console.error(err);
+    console.error('Error in getSupervisorProjects:', err);
     res.status(500).json({ message: "Unable to load supervisor projects" });
   }
 };
 
 // GET all projects for HOD
 export const getAllProjects = async (req, res) => {
+  const cacheKey = `projects:all`;
   try {
+    const redis = await getRedis();
+    let cachedProjects = await redis.get(cacheKey);
+    if (cachedProjects) {
+      console.log('Cache HIT:', cacheKey);
+      return res.json(JSON.parse(cachedProjects));
+    }
+    console.log('Cache MISS:', cacheKey);
+
     const projects = await Project.find({})
       .populate("leader", "name email")
       .populate("members", "name email")
@@ -105,9 +147,12 @@ export const getAllProjects = async (req, res) => {
       .populate("hodFeedback.by", "name email")
       .sort({ submittedAt: -1 });
 
+    try {
+      await redis.setEx(cacheKey, 300, JSON.stringify(projects));
+    } catch (e) { }
     res.json(projects);
   } catch (err) {
-    console.error(err);
+    console.error('Error in getAllProjects:', err);
     res.status(500).json({ message: "Unable to load all projects" });
   }
 };
@@ -124,6 +169,19 @@ export const assignSupervisor = async (req, res) => {
     project.supervisor = supervisorId;
     project.status = "under_review"; // Move to under review once assigned
     await project.save();
+
+    // 🔥 Cache invalidation (fix stale supervisor + student dashboards)
+    try {
+      const redis = await getRedis();
+      await redis.del(`projects:supervisor:${supervisorId}`);
+      await redis.del('projects:all');
+      if (project.leader) {
+        await redis.del(`projects:my:${project.leader}`);
+      }
+    } catch (e) {
+      // ignore cache errors
+    }
+
 
     // Create notification for supervisor
     const notification = new Notification({
@@ -154,13 +212,55 @@ export const approveProject = async (req, res) => {
 
     // Set status to supervisor_approved - pending HOD evaluation
     project.status = "supervisor_approved";
+
+    // Create group if not exists
+    let group = project.group;
+    if (!group) {
+      // Combine leader and members for group
+      const allMembers = [project.leader._id, ...project.members];
+
+      group = new Group({
+        name: project.title,
+        description: `Team for project: ${project.title}`,
+        project: project._id,
+        members: allMembers,
+        membersInfo: await Promise.all(allMembers.map(async (memberId) => {
+          const user = await User.findById(memberId).select('name email _id');
+          return {
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email
+          };
+        }))
+      });
+      await group.save();
+
+      // Link back to project
+      project.group = group._id;
+    }
+
     await project.save();
 
-    // Create notification for student - supervisor approved, awaiting HOD
+    // 🔥 Cache invalidation (supervisor + student dashboards)
+    try {
+      const redis = await getRedis();
+      if (project.supervisor) {
+        await redis.del(`projects:supervisor:${project.supervisor}`);
+      }
+      await redis.del('projects:all');
+      if (project.leader) {
+        await redis.del(`projects:my:${project.leader}`);
+      }
+    } catch (e) {
+      // ignore cache errors
+    }
+
+    // Create notification for student - supervisor approved, group created
+
     const notification = new Notification({
       userId: project.leader._id,
       fromUserId: req.user._id,
-      message: `Your project "${project.title}" has been approved by supervisor. Pending HOD evaluation.`,
+      message: `Your project "${project.title}" has been approved by supervisor. Group "${group.name}" created! Pending HOD evaluation.`,
       type: 'supervisor_approved',
       projectId: project._id
     });
@@ -170,10 +270,13 @@ export const approveProject = async (req, res) => {
     const io = req.app.get('io');
     io.to(project.leader._id.toString()).emit('notification', notification);
 
+    // Socket for group created
+    io.emit('groupCreated', { group: group._id, project: project._id });
+
     // Notify HOD about project ready for evaluation via socket
     io.emit('hod_new_project', { project });
 
-    res.json({ message: "Project approved by supervisor. Pending HOD evaluation.", project });
+    res.json({ message: "Project approved by supervisor. Group created. Pending HOD evaluation.", project, group });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Unable to approve project" });
@@ -189,7 +292,22 @@ export const rejectProject = async (req, res) => {
     project.status = "rejected";
     await project.save();
 
+    // 🔥 Cache invalidation (supervisor + student dashboards)
+    try {
+      const redis = await getRedis();
+      if (project.supervisor) {
+        await redis.del(`projects:supervisor:${project.supervisor}`);
+      }
+      await redis.del('projects:all');
+      if (project.leader) {
+        await redis.del(`projects:my:${project.leader}`);
+      }
+    } catch (e) {
+      // ignore cache errors
+    }
+
     // Create notification for student
+
     const notification = new Notification({
       userId: project.leader._id,
       fromUserId: req.user._id,
@@ -215,7 +333,7 @@ export const evaluateProject = async (req, res) => {
   try {
     const { decision, feedback } = req.body;
     // decision should be 'hod_approved' or 'hod_rejected'
-    
+
     const project = await Project.findById(req.params.id).populate('leader', 'name');
     if (!project) return res.status(404).json({ message: "Project not found" });
 
@@ -226,7 +344,7 @@ export const evaluateProject = async (req, res) => {
 
     // Update project status based on HOD decision
     project.status = decision;
-    
+
     // Add HOD feedback
     project.hodFeedback = {
       text: feedback,
@@ -234,14 +352,29 @@ export const evaluateProject = async (req, res) => {
       decision: decision,
       createdAt: new Date()
     };
-    
+
     await project.save();
 
+    // 🔥 Cache invalidation (supervisor + student dashboards)
+    try {
+      const redis = await getRedis();
+      if (project.supervisor) {
+        await redis.del(`projects:supervisor:${project.supervisor}`);
+      }
+      await redis.del('projects:all');
+      if (project.leader) {
+        await redis.del(`projects:my:${project.leader}`);
+      }
+    } catch (e) {
+      // ignore cache errors
+    }
+
     // Create notification for student
-    const notificationMessage = decision === "hod_approved" 
+
+    const notificationMessage = decision === "hod_approved"
       ? `Your project "${project.title}" has been approved by HOD! Final approval granted.`
       : `Your project "${project.title}" has been rejected by HOD. Please check feedback.`;
-    
+
     const notification = new Notification({
       userId: project.leader._id,
       fromUserId: req.user._id,
@@ -255,8 +388,8 @@ export const evaluateProject = async (req, res) => {
     const io = req.app.get('io');
     io.to(project.leader._id.toString()).emit('notification', notification);
 
-    const message = decision === "hod_approved" 
-      ? "Project approved by HOD" 
+    const message = decision === "hod_approved"
+      ? "Project approved by HOD"
       : "Project rejected by HOD";
 
     res.json({ message, project });

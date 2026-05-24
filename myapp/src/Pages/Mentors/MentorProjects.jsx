@@ -156,6 +156,8 @@ const ProjectReviewPage = () => {
                 borderRadius: "8px",
                 boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
                 margin: "10px",
+                width: "320px",
+                
               }}
             >
               <Card.Meta

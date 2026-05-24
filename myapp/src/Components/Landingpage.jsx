@@ -16,15 +16,15 @@ const LandingPage = () => {
       position: "relative",
     },
     textContainer: {
-      maxWidth: "500px",
-      marginRight: "50px",
-      padding: "20px",
+      /* OLD NON-RESPONSIVE: fixed maxWidth, right pos, overflows mobile */
+      /* NEW RESPONSIVE: fluid, centered */
+      maxWidth: "min(500px, 90vw)",
+      margin: "0 auto",
+      padding: "clamp(1rem, 4vw, 2rem)",
       borderRadius: "10px",
       backgroundColor: "white",
       boxShadow: "0 4px 6px rgba(0, 0, 0, 0.5)",
-      textAlign: "Left",
-      position: "absolute",
-      right: "50px",
+      textAlign: "left",
     },
     title: {
       color: "#4D96FF",
