@@ -25,11 +25,6 @@ A full-stack **MERN** application with **role-based workflows** (HOD / Superviso
 - `middleware/` – auth/role/upload middlewares
 - `myapp/` – React frontend (Vite)
 
-Documentation files in repo root:
-- `PROJECT_INTRODUCTION.md` – full project description
-- `INCOMPETENCIES.md` – backend gaps/inconsistencies (for learning + next re-engineering)
-- `INCOMPETENCIES_FRONTEND.md` – frontend gaps/inconsistencies (for learning + next re-engineering)
-
 
 ## Prerequisites
 - Node.js (LTS recommended)
